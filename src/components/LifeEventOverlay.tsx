@@ -1,4 +1,6 @@
+import { useEffect } from "react";
 import { LifeEvent } from "../hooks/useLifeEvents";
+import { Sfx } from "../hooks/useSfx";
 import { PlayerBean } from "./PlayerBean";
 import { Reaper } from "./Reaper";
 
@@ -13,10 +15,27 @@ import { Reaper } from "./Reaper";
 export function LifeEventOverlay({
   event,
   teamColor,
+  sfx,
 }: {
   event: LifeEvent | null;
   teamColor: string;
+  sfx: Sfx;
 }) {
+  const { playHit, playDeath, playSteal } = sfx;
+
+  useEffect(() => {
+    if (!event) return;
+    if (event.type === "died") {
+      playDeath();
+    } else if (event.type === "hit") {
+      playHit();
+    } else if (event.type === "gained" || event.type === "revived") {
+      playSteal();
+    }
+    // Este componente se remonta con una `key` nueva por evento.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [event?.key]);
+
   if (!event) return null;
 
   if (event.type === "died") {

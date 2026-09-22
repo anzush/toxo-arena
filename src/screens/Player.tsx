@@ -9,12 +9,16 @@ import { Ash } from "../components/Ash";
 import { Confetti } from "../components/Confetti";
 import { Hearts } from "../components/Hearts";
 import { LifeEventOverlay } from "../components/LifeEventOverlay";
+import { MuteButton } from "../components/MuteButton";
 import { PlayerBean } from "../components/PlayerBean";
 import { RulesExplainer } from "../components/RulesExplainer";
 import { ROLES } from "../data/roles";
 import { useLifeEvents } from "../hooks/useLifeEvents";
+import { useLifeVibration } from "../hooks/useLifeVibration";
+import { useMuted } from "../hooks/useMuted";
 import { usePlayerId } from "../hooks/usePlayerId";
 import { useRoom } from "../hooks/useRoom";
+import { Sfx, useSfx } from "../hooks/useSfx";
 import { eligibleTargets, getQuestionById } from "../lib/gameEngine";
 import {
   joinRoom,
@@ -29,6 +33,7 @@ import {
   MultipleChoiceQuestion,
   OrderQuestion,
   PendingPower,
+  PlayerState,
   RoomState,
   TrueFalseQuestion,
 } from "../types";
@@ -44,6 +49,9 @@ export function Player({ onExit }: { onExit: () => void }) {
   const { room, loading } = useRoom(roomCode);
   const lifeEvents = useLifeEvents(room?.players);
   const myEvent = lifeEvents[playerId] ?? null;
+  const [muted, toggleMuted] = useMuted();
+  const sfx = useSfx(muted);
+  useLifeVibration(myEvent);
 
   if (!roomCode || (!loading && !room)) {
     return (
@@ -73,7 +81,13 @@ export function Player({ onExit }: { onExit: () => void }) {
         className="page"
         style={{ minHeight: "100vh", justifyContent: "center" }}
       >
-        <Header name={me.name} code={room.code} onLeave={leaveRoom} />
+        <Header
+          name={me.name}
+          code={room.code}
+          onLeave={leaveRoom}
+          muted={muted}
+          onToggleMuted={toggleMuted}
+        />
         <div
           style={{
             fontFamily: "'Fredoka', sans-serif",
@@ -92,51 +106,15 @@ export function Player({ onExit }: { onExit: () => void }) {
   }
 
   if (room.status === "finished") {
-    const myTeamId = me.team;
-    const isWinner = room.winnerTeamId === myTeamId;
     return (
-      <div
-        className="page"
-        style={{ minHeight: "100vh", justifyContent: "center" }}
-      >
-        <Header name={me.name} code={room.code} onLeave={leaveRoom} />
-        <div className="victory-stage">
-          {isWinner && myTeamId && <Confetti color={room.teams[myTeamId].color} />}
-          {!isWinner && <Ash />}
-          {isWinner ? (
-            <div className="trophy-bounce" style={{ fontSize: 48 }}>
-              🏆
-            </div>
-          ) : (
-            <div className="bean-slump">
-              <PlayerBean
-                color={myTeamId ? room.teams[myTeamId].color : "#6b6580"}
-                alive={true}
-                size={52}
-              />
-            </div>
-          )}
-          <div
-            style={{
-              fontFamily: "'Fredoka', sans-serif",
-              fontSize: 26,
-              textAlign: "center",
-            }}
-          >
-            {isWinner
-              ? "¡Tu equipo ganó la partida!"
-              : `Ganó ${room.winnerTeamId ? room.teams[room.winnerTeamId].name : "nadie"}`}
-          </div>
-        </div>
-        {me.role && (
-          <div style={{ fontSize: 13, color: "var(--text-muted)" }}>
-            Tu rol era:{" "}
-            <strong style={{ color: ROLES[me.role].color }}>
-              {ROLES[me.role].name}
-            </strong>
-          </div>
-        )}
-      </div>
+      <FinishedPlayerView
+        room={room}
+        me={me}
+        onLeave={leaveRoom}
+        muted={muted}
+        onToggleMuted={toggleMuted}
+        sfx={sfx}
+      />
     );
   }
 
@@ -150,11 +128,18 @@ export function Player({ onExit }: { onExit: () => void }) {
         className="page"
         style={{ minHeight: "100vh", justifyContent: "center" }}
       >
-        <Header name={me.name} code={room.code} onLeave={leaveRoom} />
+        <Header
+          name={me.name}
+          code={room.code}
+          onLeave={leaveRoom}
+          muted={muted}
+          onToggleMuted={toggleMuted}
+        />
         <LifeEventOverlay
           key={myEvent?.key}
           event={myEvent}
           teamColor={room.teams[me.team].color}
+          sfx={sfx}
         />
         <PlayerBean color={room.teams[me.team].color} alive={false} size={72} />
         <div
@@ -187,11 +172,18 @@ export function Player({ onExit }: { onExit: () => void }) {
       className="page"
       style={{ minHeight: "100vh", justifyContent: "flex-start" }}
     >
-      <Header name={me.name} code={room.code} onLeave={leaveRoom} />
+      <Header
+        name={me.name}
+        code={room.code}
+        onLeave={leaveRoom}
+        muted={muted}
+        onToggleMuted={toggleMuted}
+      />
       <LifeEventOverlay
         key={myEvent?.key}
         event={myEvent}
         teamColor={room.teams[me.team].color}
+        sfx={sfx}
       />
       <RoleBadge roleId={me.role} />
       <PlayerBean
@@ -218,7 +210,89 @@ export function Player({ onExit }: { onExit: () => void }) {
           room={room}
           playerId={playerId}
           challenge={room.currentChallenge}
+          sfx={sfx}
         />
+      )}
+    </div>
+  );
+}
+
+function FinishedPlayerView({
+  room,
+  me,
+  onLeave,
+  muted,
+  onToggleMuted,
+  sfx,
+}: {
+  room: RoomState;
+  me: PlayerState;
+  onLeave: () => void;
+  muted: boolean;
+  onToggleMuted: () => void;
+  sfx: Sfx;
+}) {
+  const myTeamId = me.team;
+  const isWinner = room.winnerTeamId === myTeamId;
+  const { playVictory, playDefeat } = sfx;
+
+  useEffect(() => {
+    if (isWinner) {
+      playVictory();
+    } else {
+      playDefeat();
+    }
+    // Solo al entrar a esta pantalla, no en cada re-render.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  return (
+    <div
+      className="page"
+      style={{ minHeight: "100vh", justifyContent: "center" }}
+    >
+      <Header
+        name={me.name}
+        code={room.code}
+        onLeave={onLeave}
+        muted={muted}
+        onToggleMuted={onToggleMuted}
+      />
+      <div className="victory-stage">
+        {isWinner && myTeamId && <Confetti color={room.teams[myTeamId].color} />}
+        {!isWinner && <Ash />}
+        {isWinner ? (
+          <div className="trophy-bounce" style={{ fontSize: 48 }}>
+            🏆
+          </div>
+        ) : (
+          <div className="bean-slump">
+            <PlayerBean
+              color={myTeamId ? room.teams[myTeamId].color : "#6b6580"}
+              alive={true}
+              size={52}
+            />
+          </div>
+        )}
+        <div
+          style={{
+            fontFamily: "'Fredoka', sans-serif",
+            fontSize: 26,
+            textAlign: "center",
+          }}
+        >
+          {isWinner
+            ? "¡Tu equipo ganó la partida!"
+            : `Ganó ${room.winnerTeamId ? room.teams[room.winnerTeamId].name : "nadie"}`}
+        </div>
+      </div>
+      {me.role && (
+        <div style={{ fontSize: 13, color: "var(--text-muted)" }}>
+          Tu rol era:{" "}
+          <strong style={{ color: ROLES[me.role].color }}>
+            {ROLES[me.role].name}
+          </strong>
+        </div>
       )}
     </div>
   );
@@ -228,10 +302,14 @@ function Header({
   name,
   code,
   onLeave,
+  muted,
+  onToggleMuted,
 }: {
   name: string;
   code: string;
   onLeave: () => void;
+  muted: boolean;
+  onToggleMuted: () => void;
 }) {
   return (
     <div
@@ -245,17 +323,20 @@ function Header({
       <div style={{ fontSize: 13, color: "var(--text-muted)" }}>
         {name} · sala {code}
       </div>
-      <button
-        onClick={onLeave}
-        style={{
-          background: "none",
-          border: "none",
-          color: "var(--text-muted)",
-          fontSize: 13,
-        }}
-      >
-        Salir
-      </button>
+      <div style={{ display: "flex", alignItems: "center", gap: 10 }}>
+        <MuteButton muted={muted} onToggle={onToggleMuted} />
+        <button
+          onClick={onLeave}
+          style={{
+            background: "none",
+            border: "none",
+            color: "var(--text-muted)",
+            fontSize: 13,
+          }}
+        >
+          Salir
+        </button>
+      </div>
     </div>
   );
 }
@@ -426,15 +507,35 @@ function ChallengeArea({
   room,
   playerId,
   challenge,
+  sfx,
 }: {
   room: RoomState;
   playerId: string;
   challenge: CurrentChallenge;
+  sfx: Sfx;
 }) {
   const question = useMemo(
     () => getQuestionById(challenge.questionId),
     [challenge.questionId],
   );
+  const { playCorrect, playWrong } = sfx;
+
+  useEffect(() => {
+    if (!challenge.revealed) return;
+    const correct = challenge.answers?.[playerId]?.correct ?? false;
+    // Solo si de verdad va a sonar "ganaste la ronda" (PowerPhase no se
+    // monta si esta ronda terminó la partida) evitamos duplicar el sonido.
+    const willHearRoundWin =
+      challenge.roundWinnerPlayerId === playerId && !!challenge.pendingPower;
+    if (!correct) {
+      playWrong();
+    } else if (!willHearRoundWin) {
+      playCorrect();
+    }
+    // Solo al revelarse esta ronda, no en cada re-render mientras sigue revelada.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [challenge.revealed, challenge.questionId]);
+
   if (!question) return null;
 
   const myAnswer = challenge.answers?.[playerId];
@@ -538,6 +639,7 @@ function ChallengeArea({
           room={room}
           playerId={playerId}
           power={challenge.pendingPower}
+          sfx={sfx}
         />
       )}
       {!challenge.pendingPower && (
@@ -559,10 +661,12 @@ function PowerPhase({
   room,
   playerId,
   power,
+  sfx,
 }: {
   room: RoomState;
   playerId: string;
   power: PendingPower;
+  sfx: Sfx;
 }) {
   const winner = room.players[power.playerId];
   const isWinnerMe = power.playerId === playerId;
@@ -571,6 +675,15 @@ function PowerPhase({
     [room, power],
   );
   const roleMeta = ROLES[effectiveRole];
+  const { playRoundWin } = sfx;
+
+  useEffect(() => {
+    if (isWinnerMe) {
+      playRoundWin();
+    }
+    // Solo al ganar la ronda, no en cada re-render mientras se elige objetivo.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [power.playerId]);
 
   if (!power.resolved && isWinnerMe && !power.targetPlayerId) {
     return (

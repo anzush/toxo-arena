@@ -1,10 +1,10 @@
 :root {
-  --bg: #12101c;
-  --surface: #1e1b33;
-  --surface-2: #262145;
-  --border: rgba(255, 255, 255, 0.08);
+  --bg: #241c4a;
+  --surface: #322a63;
+  --surface-2: #3e3376;
+  --border: rgba(255, 255, 255, 0.1);
   --text: #f5f3fa;
-  --text-muted: #a79fc2;
+  --text-muted: #b7abdb;
   --accent: #8b5cf6;
   --accent-2: #a78bfa;
   --gold: #ffc857;
@@ -25,14 +25,16 @@ body,
 body {
   margin: 0;
   background-color: var(--bg);
-  background-image: radial-gradient(1.5px 1.5px at 8% 20%, rgba(255, 255, 255, 0.35) 50%, transparent 51%),
-    radial-gradient(1.5px 1.5px at 22% 65%, rgba(255, 255, 255, 0.25) 50%, transparent 51%),
-    radial-gradient(1.5px 1.5px at 40% 15%, rgba(255, 255, 255, 0.3) 50%, transparent 51%),
-    radial-gradient(1.5px 1.5px at 58% 80%, rgba(255, 255, 255, 0.2) 50%, transparent 51%),
-    radial-gradient(1.5px 1.5px at 72% 30%, rgba(255, 255, 255, 0.32) 50%, transparent 51%),
-    radial-gradient(1.5px 1.5px at 88% 55%, rgba(255, 255, 255, 0.25) 50%, transparent 51%),
-    radial-gradient(1.5px 1.5px at 95% 85%, rgba(255, 255, 255, 0.3) 50%, transparent 51%),
-    radial-gradient(1.5px 1.5px at 12% 90%, rgba(255, 255, 255, 0.2) 50%, transparent 51%);
+  background-image: radial-gradient(ellipse 900px 700px at 15% -10%, rgba(139, 92, 246, 0.4), transparent 60%),
+    radial-gradient(ellipse 800px 650px at 105% 105%, rgba(255, 200, 87, 0.22), transparent 58%),
+    radial-gradient(2px 2px at 8% 20%, rgba(255, 255, 255, 0.6) 50%, transparent 51%),
+    radial-gradient(2px 2px at 22% 65%, rgba(255, 200, 87, 0.6) 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 40% 15%, rgba(255, 255, 255, 0.5) 50%, transparent 51%),
+    radial-gradient(2px 2px at 58% 80%, rgba(255, 255, 255, 0.45) 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 72% 30%, rgba(255, 200, 87, 0.45) 50%, transparent 51%),
+    radial-gradient(2px 2px at 88% 55%, rgba(255, 255, 255, 0.5) 50%, transparent 51%),
+    radial-gradient(1.5px 1.5px at 95% 85%, rgba(255, 255, 255, 0.45) 50%, transparent 51%),
+    radial-gradient(2px 2px at 12% 90%, rgba(255, 200, 87, 0.4) 50%, transparent 51%);
   background-attachment: fixed;
   color: var(--text);
   font-family: "Space Grotesk", sans-serif;
@@ -117,18 +119,6 @@ input {
   padding: 40px 24px;
   gap: 24px;
   position: relative;
-}
-
-/* Fondo de estrellitas, para que se sienta más "nave espacial" que clínica */
-.starfield {
-  background-image: radial-gradient(1.5px 1.5px at 8% 20%, rgba(255, 255, 255, 0.5) 50%, transparent 51%),
-    radial-gradient(1.5px 1.5px at 22% 65%, rgba(255, 255, 255, 0.35) 50%, transparent 51%),
-    radial-gradient(1.5px 1.5px at 40% 15%, rgba(255, 255, 255, 0.4) 50%, transparent 51%),
-    radial-gradient(1.5px 1.5px at 58% 80%, rgba(255, 255, 255, 0.3) 50%, transparent 51%),
-    radial-gradient(1.5px 1.5px at 72% 30%, rgba(255, 255, 255, 0.45) 50%, transparent 51%),
-    radial-gradient(1.5px 1.5px at 88% 55%, rgba(255, 255, 255, 0.35) 50%, transparent 51%),
-    radial-gradient(1.5px 1.5px at 95% 85%, rgba(255, 255, 255, 0.4) 50%, transparent 51%),
-    radial-gradient(1.5px 1.5px at 12% 90%, rgba(255, 255, 255, 0.3) 50%, transparent 51%);
 }
 
 @keyframes wobble {
