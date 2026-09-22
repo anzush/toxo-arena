@@ -5,12 +5,15 @@ import {
   type CSSProperties,
   type ReactNode,
 } from "react";
+import { Ash } from "../components/Ash";
+import { Confetti } from "../components/Confetti";
 import { Hearts } from "../components/Hearts";
+import { LifeEventOverlay } from "../components/LifeEventOverlay";
 import { PlayerBean } from "../components/PlayerBean";
 import { RulesExplainer } from "../components/RulesExplainer";
 import { ROLES } from "../data/roles";
+import { useLifeEvents } from "../hooks/useLifeEvents";
 import { usePlayerId } from "../hooks/usePlayerId";
-import { usePrevious } from "../hooks/usePrevious";
 import { useRoom } from "../hooks/useRoom";
 import { eligibleTargets, getQuestionById } from "../lib/gameEngine";
 import {
@@ -39,23 +42,8 @@ export function Player({ onExit }: { onExit: () => void }) {
     localStorage.getItem(ROOM_KEY),
   );
   const { room, loading } = useRoom(roomCode);
-  const me = room?.players[playerId] ?? null;
-  const prevLives = usePrevious(me?.lives);
-  const [lifeFlash, setLifeFlash] = useState<"loss" | "gain" | null>(null);
-
-  useEffect(() => {
-    if (
-      me === null ||
-      prevLives === undefined ||
-      prevLives === me.lives ||
-      me.lives === 0
-    ) {
-      return;
-    }
-    setLifeFlash(me.lives < prevLives ? "loss" : "gain");
-    const timer = setTimeout(() => setLifeFlash(null), 800);
-    return () => clearTimeout(timer);
-  }, [me?.lives, prevLives]);
+  const lifeEvents = useLifeEvents(room?.players);
+  const myEvent = lifeEvents[playerId] ?? null;
 
   if (!roomCode || (!loading && !room)) {
     return (
@@ -65,6 +53,8 @@ export function Player({ onExit }: { onExit: () => void }) {
   if (loading || !room) {
     return <Centered>Conectando con la sala&hellip;</Centered>;
   }
+
+  const me = room.players[playerId];
   if (!me) {
     return (
       <JoinForm playerId={playerId} onJoined={setRoomCode} onExit={onExit} />
@@ -110,17 +100,33 @@ export function Player({ onExit }: { onExit: () => void }) {
         style={{ minHeight: "100vh", justifyContent: "center" }}
       >
         <Header name={me.name} code={room.code} onLeave={leaveRoom} />
-        <div style={{ fontSize: 48 }}>{isWinner ? "🏆" : "🎮"}</div>
-        <div
-          style={{
-            fontFamily: "'Fredoka', sans-serif",
-            fontSize: 26,
-            textAlign: "center",
-          }}
-        >
-          {isWinner
-            ? "¡Tu equipo ganó la partida!"
-            : `Ganó ${room.winnerTeamId ? room.teams[room.winnerTeamId].name : "nadie"}`}
+        <div className="victory-stage">
+          {isWinner && myTeamId && <Confetti color={room.teams[myTeamId].color} />}
+          {!isWinner && <Ash />}
+          {isWinner ? (
+            <div className="trophy-bounce" style={{ fontSize: 48 }}>
+              🏆
+            </div>
+          ) : (
+            <div className="bean-slump">
+              <PlayerBean
+                color={myTeamId ? room.teams[myTeamId].color : "#6b6580"}
+                alive={true}
+                size={52}
+              />
+            </div>
+          )}
+          <div
+            style={{
+              fontFamily: "'Fredoka', sans-serif",
+              fontSize: 26,
+              textAlign: "center",
+            }}
+          >
+            {isWinner
+              ? "¡Tu equipo ganó la partida!"
+              : `Ganó ${room.winnerTeamId ? room.teams[room.winnerTeamId].name : "nadie"}`}
+          </div>
         </div>
         {me.role && (
           <div style={{ fontSize: 13, color: "var(--text-muted)" }}>
@@ -145,6 +151,11 @@ export function Player({ onExit }: { onExit: () => void }) {
         style={{ minHeight: "100vh", justifyContent: "center" }}
       >
         <Header name={me.name} code={room.code} onLeave={leaveRoom} />
+        <LifeEventOverlay
+          key={myEvent?.key}
+          event={myEvent}
+          teamColor={room.teams[me.team].color}
+        />
         <PlayerBean color={room.teams[me.team].color} alive={false} size={72} />
         <div
           style={{
@@ -173,18 +184,22 @@ export function Player({ onExit }: { onExit: () => void }) {
 
   return (
     <div
-      className={
-        "page" +
-        (lifeFlash === "loss"
-          ? " flash-danger"
-          : lifeFlash === "gain"
-            ? " flash-success"
-            : "")
-      }
+      className="page"
       style={{ minHeight: "100vh", justifyContent: "flex-start" }}
     >
       <Header name={me.name} code={room.code} onLeave={leaveRoom} />
+      <LifeEventOverlay
+        key={myEvent?.key}
+        event={myEvent}
+        teamColor={room.teams[me.team].color}
+      />
       <RoleBadge roleId={me.role} />
+      <PlayerBean
+        color={room.teams[me.team].color}
+        alive={true}
+        shielded={me.shielded}
+        size={68}
+      />
       <Hearts lives={me.lives} />
 
       {!room.currentChallenge && (
@@ -432,7 +447,7 @@ function ChallengeArea({
     if (myAnswer) {
       return (
         <div
-          className="card"
+          className="glass-alert card-settle"
           style={{
             width: "100%",
             maxWidth: 480,
@@ -455,6 +470,7 @@ function ChallengeArea({
     if (question.type === "multiple-choice") {
       return (
         <MultipleChoiceForm
+          key={question.id}
           question={question}
           deadline={challenge.deadline}
           onSubmit={(index) => send({ type: "multiple-choice", index })}
@@ -464,6 +480,7 @@ function ChallengeArea({
     if (question.type === "true-false") {
       return (
         <TrueFalseForm
+          key={question.id}
           question={question}
           deadline={challenge.deadline}
           onSubmit={(value) => send({ type: "true-false", value })}
@@ -472,6 +489,7 @@ function ChallengeArea({
     }
     return (
       <OrderForm
+        key={question.id}
         question={question}
         deadline={challenge.deadline}
         onSubmit={(steps) => send({ type: "order", steps })}
@@ -493,7 +511,10 @@ function ChallengeArea({
         marginTop: 12,
       }}
     >
-      <div className="card pop" style={{ textAlign: "center" }}>
+      <div
+        className={`glass-alert ${correct ? "good card-punch" : "bad card-impact"}`}
+        style={{ textAlign: "center" }}
+      >
         <div
           style={{
             fontFamily: "'Fredoka', sans-serif",
@@ -553,10 +574,7 @@ function PowerPhase({
 
   if (!power.resolved && isWinnerMe && !power.targetPlayerId) {
     return (
-      <div
-        className="card pop"
-        style={{ textAlign: "center", border: `1px solid ${roleMeta.color}66` }}
-      >
+      <div className="glass-alert gold card-punch" style={{ textAlign: "center" }}>
         <div style={{ fontFamily: "'Fredoka', sans-serif", fontSize: 20 }}>
           🎉 ¡Ganaste la ronda! Eres {roleMeta.name}
         </div>
@@ -621,7 +639,7 @@ function PowerPhase({
 
   if (!power.resolved) {
     return (
-      <div className="card" style={{ textAlign: "center" }}>
+      <div className="glass-alert gold card-settle" style={{ textAlign: "center" }}>
         <div style={{ fontFamily: "'Fredoka', sans-serif", fontSize: 17 }}>
           {winner?.name} ganó la ronda y activa su poder secreto
         </div>
@@ -639,15 +657,27 @@ function PowerPhase({
 
   return (
     <div
-      className="card"
-      style={{
-        textAlign: "center",
-        border: iWasTarget ? "1px solid var(--danger)" : undefined,
-      }}
+      className={`glass-alert ${iWasTarget ? "bad card-impact" : "gold card-punch"}`}
+      style={{ textAlign: "center" }}
     >
-      <div style={{ fontFamily: "'Fredoka', sans-serif", fontSize: 17 }}>
-        {winner?.name} usó su poder en{" "}
-        {target ? target.name : "nadie"}
+      <div
+        style={{
+          fontFamily: "'Fredoka', sans-serif",
+          fontSize: 17,
+          display: "flex",
+          alignItems: "center",
+          justifyContent: "center",
+          gap: 6,
+          flexWrap: "wrap",
+        }}
+      >
+        <span>
+          {winner?.name} usó su poder en{" "}
+          {target ? target.name : "nadie"}
+        </span>
+        {effectiveRole === "saboteador" && target && (
+          <span className="steal-heart">💛</span>
+        )}
       </div>
       {iWasTarget && (
         <div style={{ fontSize: 13, color: "var(--danger)", marginTop: 6 }}>
@@ -669,7 +699,7 @@ function MultipleChoiceForm({
 }) {
   return (
     <div
-      className="card"
+      className="card card-settle"
       style={{
         width: "100%",
         maxWidth: 480,
@@ -734,7 +764,7 @@ function TrueFalseForm({
 }) {
   return (
     <div
-      className="card"
+      className="card card-settle"
       style={{
         width: "100%",
         maxWidth: 480,
@@ -821,7 +851,7 @@ function OrderForm({
 
   return (
     <div
-      className="card"
+      className="card card-settle"
       style={{
         width: "100%",
         maxWidth: 480,

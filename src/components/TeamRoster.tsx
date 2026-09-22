@@ -1,4 +1,5 @@
 import { ROLES } from "../data/roles";
+import { LifeEvent } from "../hooks/useLifeEvents";
 import { isAlive } from "../lib/gameEngine";
 import { PlayerState, TeamState } from "../types";
 import { Hearts } from "./Hearts";
@@ -9,11 +10,15 @@ export function TeamRoster({
   players,
   highlightPlayerId,
   revealRoles,
+  events,
+  outcome,
 }: {
   team: TeamState;
   players: Record<string, PlayerState>;
   highlightPlayerId?: string | null;
   revealRoles?: boolean;
+  events?: Record<string, LifeEvent>;
+  outcome?: "win" | "lose";
 }) {
   const total = team.playerIds.length;
   const alive = team.playerIds.filter((id) => isAlive(players[id])).length;
@@ -21,7 +26,11 @@ export function TeamRoster({
 
   return (
     <div
-      className="card"
+      className={
+        "card" +
+        (outcome === "win" ? " team-card-win" : "") +
+        (outcome === "lose" ? " team-card-lose" : "")
+      }
       style={{
         display: "flex",
         flexDirection: "column",
@@ -67,6 +76,7 @@ export function TeamRoster({
           const player = players[id];
           if (!player) return null;
           const dead = player.lives === 0;
+          const event = events?.[id];
           return (
             <div
               key={id}
@@ -83,6 +93,7 @@ export function TeamRoster({
                 alive={!dead}
                 shielded={player.shielded}
                 size={44}
+                event={event}
               />
               <div
                 style={{
@@ -99,7 +110,7 @@ export function TeamRoster({
               >
                 {player.name}
               </div>
-              <Hearts lives={player.lives} size={11} />
+              <Hearts lives={player.lives} size={11} event={event} />
               {revealRoles && player.role && (
                 <div
                   style={{

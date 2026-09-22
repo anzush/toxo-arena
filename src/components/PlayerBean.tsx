@@ -1,68 +1,61 @@
-import { useEffect, useState } from "react";
-import { usePrevious } from "../hooks/usePrevious";
+import { LifeEvent } from "../hooks/useLifeEvents";
 
 export function PlayerBean({
   color,
   alive,
   shielded,
-  size = 56
+  size = 56,
+  event,
 }: {
   color: string;
   alive: boolean;
   shielded?: boolean;
   size?: number;
+  event?: LifeEvent | null;
 }) {
   const height = size * 1.15;
-  const prevAlive = usePrevious(alive);
-  const [justDied, setJustDied] = useState(false);
-
-  useEffect(() => {
-    // Anima al morir, y también la primera vez que se monta ya muerto
-    // (p. ej. la pantalla de "fuiste eliminado" del propio jugador).
-    if (alive || prevAlive === false) return;
-    setJustDied(true);
-    const timer = setTimeout(() => setJustDied(false), 700);
-    return () => clearTimeout(timer);
-  }, [alive, prevAlive]);
+  const isHit = event?.type === "hit" || event?.type === "died";
+  const isGain = event?.type === "gained" || event?.type === "revived";
 
   return (
     <div
-      className={justDied ? "death-drop" : undefined}
       style={{
         position: "relative",
         width: size,
         height,
         opacity: alive ? 1 : 0.35,
         transform: alive ? "none" : "rotate(-16deg)",
-        transition: "all .2s ease",
-        flex: "none"
+        transition: "opacity .2s ease, transform .2s ease",
+        flex: "none",
       }}
+      className={
+        event?.type === "died" ? "death-pop" : isHit ? "life-shake" : undefined
+      }
     >
-      {justDied && (
-        <div
-          className="float-badge"
-          style={{
-            position: "absolute",
-            top: -size * 0.4,
-            left: "50%",
-            transform: "translateX(-50%)",
-            fontSize: size * 0.5,
-            pointerEvents: "none"
-          }}
-        >
-          💀
-        </div>
-      )}
       {shielded && alive && (
         <div
           style={{
             position: "absolute",
             inset: -6,
             borderRadius: "50%",
-            boxShadow: "0 0 0 3px #52D68A, 0 0 16px rgba(82,214,138,0.55)"
+            boxShadow: "0 0 0 3px #52D68A, 0 0 16px rgba(82,214,138,0.55)",
           }}
         />
       )}
+
+      {event?.type === "died" && (
+        <div className="ghost-float">
+          <div
+            style={{
+              width: "100%",
+              height: "100%",
+              background: "rgba(245,243,250,0.55)",
+              borderRadius: "50% 50% 46% 46% / 62% 62% 40% 40%",
+            }}
+          />
+        </div>
+      )}
+
       <div
         style={{
           width: "100%",
@@ -70,7 +63,7 @@ export function PlayerBean({
           background: color,
           borderRadius: "50% 50% 46% 46% / 62% 62% 40% 40%",
           border: "2px solid rgba(0,0,0,0.25)",
-          position: "relative"
+          position: "relative",
         }}
       >
         <div
@@ -81,12 +74,25 @@ export function PlayerBean({
             transform: "translateX(-50%)",
             width: "58%",
             height: "32%",
-            background: alive ? "linear-gradient(135deg,#eaf6ff,#a9ddff)" : "#3a3550",
+            background: alive
+              ? "linear-gradient(135deg,#eaf6ff,#a9ddff)"
+              : "#3a3550",
             borderRadius: "50%",
-            border: "2px solid rgba(0,0,0,0.2)"
+            border: "2px solid rgba(0,0,0,0.2)",
           }}
         />
       </div>
+
+      {isHit && (
+        <span className="float-badge" style={{ color: "var(--danger)" }}>
+          -{event?.delta ?? 1} 💔
+        </span>
+      )}
+      {isGain && (
+        <span className="float-badge" style={{ color: "var(--success)" }}>
+          +{event?.delta ?? 1} 💚
+        </span>
+      )}
     </div>
   );
 }

@@ -1,8 +1,10 @@
 import { useEffect, useState } from "react";
+import { Confetti } from "../components/Confetti";
 import { RulesExplainer } from "../components/RulesExplainer";
 import { TeamRoster } from "../components/TeamRoster";
+import { useLifeEvents } from "../hooks/useLifeEvents";
 import { useRoom } from "../hooks/useRoom";
-import { getQuestionById, isAlive } from "../lib/gameEngine";
+import { eligibleTargets, getQuestionById, isAlive } from "../lib/gameEngine";
 import {
   createRoom,
   playAgain,
@@ -45,7 +47,7 @@ export function Host({ onExit }: { onExit: () => void }) {
     const challenge = room?.currentChallenge;
     if (!challenge || challenge.revealed) return;
     const timer = setTimeout(
-      () => resolveRound(room!.code).catch(console.error),
+      () => resolveRound(room!.code).catch(() => {}),
       Math.max(0, challenge.deadline - Date.now()),
     );
     return () => clearTimeout(timer);
@@ -64,7 +66,7 @@ export function Host({ onExit }: { onExit: () => void }) {
     ).length;
     const answeredCount = Object.keys(challenge.answers ?? {}).length;
     if (aliveCount > 0 && answeredCount >= aliveCount) {
-      resolveRound(room.code).catch(console.error);
+      resolveRound(room.code).catch(() => {});
     }
   }, [
     room?.currentChallenge?.answers,
@@ -77,7 +79,7 @@ export function Host({ onExit }: { onExit: () => void }) {
     const power = room?.currentChallenge?.pendingPower;
     if (!power || power.resolved) return;
     const timer = setTimeout(
-      () => resolvePower(room!.code).catch(console.error),
+      () => resolvePower(room!.code).catch(() => {}),
       Math.max(0, power.deadline - Date.now()),
     );
     return () => clearTimeout(timer);
@@ -264,6 +266,7 @@ function LobbyView({ room }: { room: RoomState }) {
 function PlayingView({ room }: { room: RoomState }) {
   const [busy, setBusy] = useState(false);
   const [noMoreQuestions, setNoMoreQuestions] = useState(false);
+  const lifeEvents = useLifeEvents(room.players);
   const challenge = room.currentChallenge;
   const question = challenge ? getQuestionById(challenge.questionId) : null;
   const alivePlayerIds = Object.entries(room.players)
@@ -289,6 +292,9 @@ function PlayingView({ room }: { room: RoomState }) {
   const targetPlayer = power?.targetPlayerId
     ? room.players[power.targetPlayerId]
     : null;
+  const effectiveRole = power
+    ? eligibleTargets(room, power).effectiveRole
+    : null;
 
   return (
     <div
@@ -312,6 +318,7 @@ function PlayingView({ room }: { room: RoomState }) {
             team={room.teams[id]}
             players={room.players}
             highlightPlayerId={challenge?.roundWinnerPlayerId}
+            events={lifeEvents}
           />
         ))}
       </div>
@@ -339,7 +346,8 @@ function PlayingView({ room }: { room: RoomState }) {
 
       {challenge && question && (
         <div
-          className="card"
+          key={challenge.questionId}
+          className="card card-settle"
           style={{
             maxWidth: 640,
             margin: "0 auto",
@@ -407,14 +415,8 @@ function PlayingView({ room }: { room: RoomState }) {
             <div style={{ marginTop: 20 }}>
               <ResultList room={room} />
               <div
-                className="pop"
-                style={{
-                  marginTop: 16,
-                  background: "var(--surface-2)",
-                  borderRadius: 16,
-                  padding: 18,
-                  border: "1px solid var(--gold)",
-                }}
+                className="glass-alert gold card-punch"
+                style={{ marginTop: 16 }}
               >
                 <div
                   style={{ fontFamily: "'Fredoka', sans-serif", fontSize: 18 }}
@@ -432,10 +434,24 @@ function PlayingView({ room }: { room: RoomState }) {
                 )}
 
                 {power.resolved && (
-                  <div style={{ marginTop: 12, fontSize: 15 }}>
+                  <div
+                    style={{
+                      marginTop: 12,
+                      fontSize: 15,
+                      display: "flex",
+                      alignItems: "center",
+                      justifyContent: "center",
+                      gap: 6,
+                    }}
+                  >
                     {targetPlayer ? (
                       <>
-                        Objetivo: <strong>{targetPlayer.name}</strong>
+                        <span>
+                          Objetivo: <strong>{targetPlayer.name}</strong>
+                        </span>
+                        {effectiveRole === "saboteador" && (
+                          <span className="steal-heart">💛</span>
+                        )}
                       </>
                     ) : (
                       "No había a quién aplicarle el poder esta vez."
@@ -529,15 +545,21 @@ function FinishedView({ room }: { room: RoomState }) {
         gap: 20,
       }}
     >
-      <div style={{ fontSize: 56 }}>🏆</div>
-      <div
-        style={{
-          fontFamily: "'Fredoka', sans-serif",
-          fontSize: 32,
-          color: winner?.color,
-        }}
-      >
-        {winner ? `¡${winner.name} gana la partida!` : "Partida terminada"}
+      <div className="victory-stage">
+        {winner && <Confetti color={winner.color} />}
+        <div className="trophy-bounce" style={{ fontSize: 56 }}>
+          🏆
+        </div>
+        <div
+          style={{
+            fontFamily: "'Fredoka', sans-serif",
+            fontSize: 32,
+            color: winner?.color,
+            textAlign: "center",
+          }}
+        >
+          {winner ? `¡${winner.name} gana la partida!` : "Partida terminada"}
+        </div>
       </div>
       <div style={{ fontSize: 13, color: "var(--text-muted)" }}>
         Así quedaron los roles de todos:
@@ -556,6 +578,9 @@ function FinishedView({ room }: { room: RoomState }) {
             team={room.teams[id]}
             players={room.players}
             revealRoles
+            outcome={
+              room.winnerTeamId ? (id === room.winnerTeamId ? "win" : "lose") : undefined
+            }
           />
         ))}
       </div>
