@@ -4,12 +4,13 @@ import { RulesExplainer } from "../components/RulesExplainer";
 import { TeamRoster } from "../components/TeamRoster";
 import { useLifeEvents } from "../hooks/useLifeEvents";
 import { useRoom } from "../hooks/useRoom";
-import { eligibleTargets, getQuestionById, isAlive } from "../lib/gameEngine";
+import { eligibleTargets, findInfiltrado, getQuestionById, isAlive } from "../lib/gameEngine";
 import {
   createRoom,
   playAgain,
   resolvePower,
   resolveRound,
+  seedTestPlayers,
   startNextChallenge,
   startSorteoYJuego,
 } from "../lib/roomService";
@@ -305,6 +306,23 @@ function PlayingView({ room }: { room: RoomState }) {
         width: "100%",
       }}
     >
+      {import.meta.env.DEV && (
+        <button
+          onClick={() => seedTestPlayers(room.code)}
+          style={{
+            alignSelf: "center",
+            background: "none",
+            border: "1px dashed var(--text-muted)",
+            borderRadius: 8,
+            color: "var(--text-muted)",
+            fontSize: 12,
+            padding: "6px 12px",
+          }}
+        >
+          🧪 Agregar 5 vivos + 2 eliminados por equipo (solo dev)
+        </button>
+      )}
+
       <div
         style={{
           display: "grid",
@@ -526,6 +544,7 @@ function ResultList({ room }: { room: RoomState }) {
 function FinishedView({ room }: { room: RoomState }) {
   const [busy, setBusy] = useState(false);
   const winner = room.winnerTeamId ? room.teams[room.winnerTeamId] : null;
+  const infiltrado = findInfiltrado(room.players);
 
   async function handleRestart() {
     setBusy(true);
@@ -561,6 +580,21 @@ function FinishedView({ room }: { room: RoomState }) {
           {winner ? `¡${winner.name} gana la partida!` : "Partida terminada"}
         </div>
       </div>
+      {infiltrado && (
+        <div
+          className="glass-alert gold"
+          style={{ fontSize: 14, textAlign: "center", maxWidth: 480 }}
+        >
+          🕵️ <strong>{infiltrado.player.name}</strong> era un infiltrado: jugaba
+          en{" "}
+          {infiltrado.player.team ? room.teams[infiltrado.player.team].name : "?"}
+          , pero en secreto ganaba para{" "}
+          {infiltrado.player.infiltradoFor
+            ? room.teams[infiltrado.player.infiltradoFor].name
+            : "?"}
+          .
+        </div>
+      )}
       <div style={{ fontSize: 13, color: "var(--text-muted)" }}>
         Así quedaron los roles de todos:
       </div>

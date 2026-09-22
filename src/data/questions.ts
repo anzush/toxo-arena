@@ -7,92 +7,6 @@ import type { Question } from "../types";
 
 export const QUESTIONS: Question[] = [
   {
-    id: "mc-1",
-    type: "multiple-choice",
-    prompt: "¿Cuál es el hospedador definitivo de Toxoplasma gondii?",
-    options: ["Perro", "Gato", "Cerdo", "Vaca"],
-    correctIndex: 1,
-    explanation:
-      "Solo en el intestino de los félidos (principalmente el gato doméstico) el parásito completa su ciclo sexual y forma ooquistes."
-  },
-  {
-    id: "mc-2",
-    type: "multiple-choice",
-    prompt: "¿Qué forma parasitaria se encuentra dentro de los quistes tisulares?",
-    options: ["Taquizoíto", "Bradizoíto", "Ooquiste", "Merozoíto"],
-    correctIndex: 1,
-    explanation: "Los bradizoítos son la forma de multiplicación lenta que persiste en quistes tisulares (músculo, SNC, retina)."
-  },
-  {
-    id: "mc-3",
-    type: "multiple-choice",
-    prompt: "¿Qué forma es responsable de la multiplicación rápida en la fase aguda de la infección?",
-    options: ["Bradizoíto", "Taquizoíto", "Ooquiste", "Esporozoíto"],
-    correctIndex: 1,
-    explanation: "El taquizoíto se replica rápido y es el que disemina la infección por el organismo en la fase aguda."
-  },
-  {
-    id: "mc-4",
-    type: "multiple-choice",
-    prompt: "¿Cuál es el tratamiento de elección en un caso de toxoplasmosis clínica?",
-    options: ["Pirimetamina + sulfadiazina", "Amoxicilina", "Ivermectina", "Metronidazol solo"],
-    correctIndex: 0,
-    explanation: "La combinación pirimetamina + sulfadiazina (más ácido folínico) es el esquema clásico de tratamiento."
-  },
-  {
-    id: "mc-5",
-    type: "multiple-choice",
-    prompt: "¿En qué órgano del gato ocurre la reproducción sexual del parásito?",
-    options: ["Hígado", "Intestino delgado", "Riñón", "Bazo"],
-    correctIndex: 1,
-    explanation: "El ciclo sexual (formación de ooquistes) sucede en el epitelio del intestino delgado del gato."
-  },
-  {
-    id: "mc-6",
-    type: "multiple-choice",
-    prompt: "¿Cuánto tiempo tardan los ooquistes en esporular y volverse infectantes en el ambiente?",
-    options: ["Unas horas", "1 a 5 días", "3 semanas", "No esporulan"],
-    correctIndex: 1,
-    explanation: "Fuera del gato, los ooquistes esporulan en 1 a 5 días según la temperatura y humedad."
-  },
-  {
-    id: "mc-7",
-    type: "multiple-choice",
-    prompt: "¿Cuál es una consecuencia grave de la toxoplasmosis congénita?",
-    options: ["Fractura ósea", "Coriorretinitis y daño neurológico", "Dermatitis alérgica", "Anemia hemolítica"],
-    correctIndex: 1,
-    explanation: "La infección congénita puede causar coriorretinitis, calcificaciones intracraneales e hidrocefalia, entre otros."
-  },
-  {
-    id: "mc-8",
-    type: "multiple-choice",
-    prompt: "¿Qué método diagnóstico detecta anticuerpos IgG/IgM frente a Toxoplasma?",
-    options: ["Serología", "Radiografía", "Ecografía", "Hemograma"],
-    correctIndex: 0,
-    explanation: "Las pruebas serológicas (IgG/IgM) son el método más usado para el diagnóstico indirecto."
-  },
-  {
-    id: "mc-9",
-    type: "multiple-choice",
-    prompt: "¿Cuál de estas NO es una vía de transmisión de Toxoplasma gondii?",
-    options: ["Ingestión de carne mal cocida", "Contacto con heces de gato", "Transmisión transplacentaria", "Picadura de mosquito"],
-    correctIndex: 3,
-    explanation: "A diferencia de otras parasitosis, Toxoplasma no se transmite por vectores como el mosquito."
-  },
-  {
-    id: "mc-10",
-    type: "multiple-choice",
-    prompt: "¿Qué recomendación de prevención es correcta para una mujer embarazada con gato en casa?",
-    options: [
-      "Evitar limpiar el arenero o usar guantes y lavarse las manos",
-      "Regalar al gato de inmediato",
-      "Vacunar al gato contra Toxoplasma",
-      "No es necesario tomar ninguna precaución"
-    ],
-    correctIndex: 0,
-    explanation: "No es necesario deshacerse del gato: basta con evitar el contacto directo con las heces o usar guantes y lavarse las manos."
-  },
-  {
     id: "mc-11",
     type: "multiple-choice",
     prompt: "¿Cuál es una de las principales formas de transmisión de Toxoplasma gondii?",
@@ -117,7 +31,6 @@ export const QUESTIONS: Question[] = [
     explanation: "Los félidos, principalmente el gato doméstico, son los únicos hospedadores donde el parásito completa su ciclo sexual."
   },
   {
-    // Respuesta inferida, no venía explícita en el material — verifícala contra tu fuente.
     id: "mc-14",
     type: "multiple-choice",
     prompt: "A nivel de encéfalo, ¿cómo suelen presentarse las lesiones macroscópicas de la toxoplasmosis?",
@@ -150,7 +63,6 @@ export const QUESTIONS: Question[] = [
     explanation: "El taquizoíto tiene forma de media luna o arco, con un extremo puntiagudo y otro redondeado."
   },
   {
-    // Respuesta inferida, no venía explícita en el material — verifícala contra tu fuente.
     id: "mc-18",
     type: "multiple-choice",
     prompt: "Los focos de necrosis y mineralización asociados a aborto y muerte fetal, especialmente en pequeños rumiantes, ¿dónde se localizan principalmente?",
@@ -159,7 +71,6 @@ export const QUESTIONS: Question[] = [
     explanation: "La necrosis cotiledonaria de la placenta es la lesión clásica asociada al aborto por toxoplasmosis en ovejas y cabras."
   },
   {
-    // Respuesta inferida, no venía explícita en el material — verifícala contra tu fuente.
     id: "mc-19",
     type: "multiple-choice",
     prompt: "¿Cuál de estas NO es una lesión macroscópica ocular descrita para la toxoplasmosis?",
@@ -168,56 +79,119 @@ export const QUESTIONS: Question[] = [
     explanation: "Se describen retinitis, coriorretinitis, focos blanquecino-grisáceos y hemorragias o vasculitis; el desprendimiento total de retina no es una lesión típica descrita."
   },
   {
-    id: "tf-1",
-    type: "true-false",
-    prompt: "Toxoplasma gondii solo puede transmitirse por contacto directo con gatos.",
-    correctAnswer: false,
-    explanation: "También se transmite por carne mal cocida con quistes tisulares y por vía transplacentaria."
+    id: "mc-20",
+    type: "multiple-choice",
+    prompt: "¿Cuál es la forma asociada a la infección aguda?",
+    options: ["Bradizoíto", "Ooquiste", "Esporozoíto", "Taquizoíto"],
+    correctIndex: 3,
+    explanation: "El taquizoíto es la forma de multiplicación rápida asociada a la fase aguda de la infección."
   },
   {
-    id: "tf-2",
-    type: "true-false",
-    prompt: "La mayoría de los gatos infectados no muestran signos clínicos evidentes.",
-    correctAnswer: true,
-    explanation: "La infección felina suele cursar de forma subclínica, sobre todo en gatos adultos inmunocompetentes."
+    id: "ord-3",
+    type: "order",
+    prompt: "Ordena las fases de la patogenia de Toxoplasma gondii, desde la invasión inicial hasta sus efectos en rumiantes gestantes.",
+    steps: [
+      "Tras la ingestión, el parásito secreta roptrias y micronemas para invadir los enterocitos",
+      "Se replica por endodiogenia en la vacuola parasitófora, causando necrosis focal y vasculitis (fase aguda)",
+      "Se disemina por el organismo hacia tejidos como músculo, corazón y cerebro",
+      "La respuesta inmune mediada por IFN-γ, TNF-α y linfocitos CD8+ detiene la replicación rápida",
+      "El parásito se diferencia a bradizoítos y persiste en quistes tisulares del tejido muscular, cardíaco y nervioso (fase crónica)",
+      "En rumiantes gestantes, coloniza la placenta y provoca necrosis focal en \"granos de sal\", derivando en aborto o efectos fetales irreversibles"
+    ],
+    explanation: "Es la secuencia de las 3 fases del esquema de patogenia: invasión celular y diseminación (fase aguda), respuesta inmune y latencia (fase crónica), y fisiopatología reproductiva en rumiantes."
+  },
+  {
+    // Orden reconstruido a partir de las imágenes A–D (rotuladas, no numeradas como secuencia explícita en el material) según el ciclo biológico conocido del parásito — verifícalo contra tu fuente.
+    id: "ord-4",
+    type: "order",
+    prompt: "Ordena la secuencia del ciclo intestinal de Toxoplasma gondii en el gato, según las lesiones microscópicas descritas.",
+    steps: [
+      "En el intestino del gato, el parásito se multiplica de forma asexual formando esquizontes y merozoítos",
+      "Se forma el microgameto, la forma masculina del parásito, que presenta dos flagelos",
+      "El microgameto fecunda al macrogamonte y se forma el ooquiste en el intestino delgado",
+      "En otros tejidos, como el cerebro, el parásito persiste como bradizoítos dentro de un quiste tisular, propio de la fase crónica"
+    ],
+    explanation: "Primero hay multiplicación asexual (esquizontes/merozoítos), luego la fase sexual forma el microgameto y fecunda al macrogamonte dando el ooquiste, mientras en otros tejidos se establece la latencia crónica en quistes con bradizoítos."
+  },
+  {
+    id: "ord-5",
+    type: "order",
+    prompt: "Ordena la estructura del ooquiste esporulado de Toxoplasma gondii, de la más externa a la más interna.",
+    steps: [
+      "Ooquiste esférico o subesférico (10–15 µm)",
+      "Esporoquiste (2 por ooquiste)",
+      "Esporozoíto (4 por esporoquiste, de aproximadamente 2 × 6–8 µm)"
+    ],
+    explanation: "El ooquiste contiene 2 esporoquistes, y cada uno alberga 4 esporozoítos en su interior."
   },
   {
     id: "tf-3",
     type: "true-false",
-    prompt: "Los ooquistes recién eliminados en las heces del gato ya son infectantes de inmediato.",
-    correctAnswer: false,
-    explanation: "Necesitan esporular en el ambiente (1 a 5 días) antes de volverse infectantes."
+    prompt: "El hospedador definitivo de Toxoplasma gondii es el gato (félidos).",
+    correctAnswer: true,
+    explanation: "Los félidos, principalmente el gato doméstico, son los hospedadores definitivos donde el parásito completa su ciclo sexual."
   },
   {
     id: "tf-4",
     type: "true-false",
-    prompt: "Prácticamente todos los animales de sangre caliente pueden actuar como hospedadores intermediarios.",
+    prompt: "La mayoría de las infecciones por Toxoplasma gondii son sintomáticas.",
+    correctAnswer: false,
+    explanation: "La clínica es asintomática en la mayoría de los casos; es grave sobre todo en inmunodeprimidos y fetos."
+  },
+  {
+    id: "tf-5",
+    type: "true-false",
+    prompt: "El taquizoíto es la forma responsable de la infección crónica.",
+    correctAnswer: false,
+    explanation: "El taquizoíto corresponde a la infección aguda; el bradizoíto es la forma de la infección crónica, dentro de quistes tisulares."
+  },
+  {
+    id: "tf-6",
+    type: "true-false",
+    prompt: "El bradizoíto se multiplica lentamente y persiste en la fase latente.",
     correctAnswer: true,
-    explanation: "Toxoplasma gondii tiene un rango de hospedadores intermediarios inusualmente amplio."
+    explanation: "A diferencia del taquizoíto, el bradizoíto se multiplica lentamente y persiste en quistes tisulares durante la fase crónica."
   },
   {
-    id: "ord-1",
-    type: "order",
-    prompt: "Ordena las etapas del ciclo biológico de Toxoplasma gondii, desde el inicio.",
-    steps: [
-      "El gato ingiere carne con quistes tisulares u ooquistes esporulados",
-      "El parásito se reproduce sexualmente en el intestino del gato",
-      "El gato elimina ooquistes no esporulados en las heces",
-      "Los ooquistes esporulan en el ambiente y se vuelven infectantes",
-      "Un hospedador intermediario ingiere los ooquistes y desarrolla quistes tisulares"
-    ],
-    explanation: "Este es el ciclo heteroxeno clásico: hospedador definitivo (gato) → ambiente → hospedador intermediario."
+    id: "tf-7",
+    type: "true-false",
+    prompt: "El ooquiste esporulado contiene 2 esporoquistes, cada uno con 4 esporozoítos.",
+    correctAnswer: true,
+    explanation: "Así se describe la estructura del ooquiste esporulado en el material."
   },
   {
-    id: "ord-2",
-    type: "order",
-    prompt: "Ordena los pasos correctos para limpiar el arenero del gato de forma segura.",
-    steps: [
-      "Ponerse guantes desechables",
-      "Retirar los sólidos y las heces",
-      "Lavar el arenero con agua caliente",
-      "Lavarse las manos con agua y jabón al terminar"
-    ],
-    explanation: "Cambiar el arenero a diario (antes de que esporulen los ooquistes) y usar guantes reduce el riesgo de exposición."
+    id: "tf-8",
+    type: "true-false",
+    prompt: "Las lesiones en el encéfalo por toxoplasmosis suelen ser muy evidentes macroscópicamente.",
+    correctAnswer: false,
+    explanation: "Las lesiones cerebrales suelen ser poco evidentes macroscópicamente, salvo focos de lesión o hemorragia en casos graves."
+  },
+  {
+    id: "tf-9",
+    type: "true-false",
+    prompt: "La lesión de \"granos de sal\" se observa en la placenta.",
+    correctAnswer: true,
+    explanation: "Se observa necrosis focal blanquecina en los cotiledones placentarios, un hallazgo patognomónico conocido como \"granos de sal\"."
+  },
+  {
+    id: "tf-10",
+    type: "true-false",
+    prompt: "Un aumento de cuatro veces en los títulos de IgG confirma una infección activa.",
+    correctAnswer: true,
+    explanation: "El material indica que un aumento de cuatro veces en los títulos de IgG confirma una infección activa."
+  },
+  {
+    id: "tf-11",
+    type: "true-false",
+    prompt: "Neospora caninum es uno de los diagnósticos diferenciales de cuadros reproductivos similares a la toxoplasmosis.",
+    correctAnswer: true,
+    explanation: "El material lista a Neospora caninum, Sarcocystis spp., Chlamydia abortus, Coxiella burnetii, Brucella spp. y Campylobacter fetus como diagnósticos diferenciales."
+  },
+  {
+    id: "tf-12",
+    type: "true-false",
+    prompt: "El esporozoíto se elimina en la orina de los felinos.",
+    correctAnswer: false,
+    explanation: "El esporozoíto, dentro del ooquiste, se elimina en las heces de los felinos, no en la orina."
   }
 ];

@@ -12,10 +12,12 @@ const REVEAL_MS = 4500;
  */
 export function RoleReveal({
   roleId,
+  secretTeamName,
   sfx,
   onDone,
 }: {
   roleId: RoleId;
+  secretTeamName?: string | null;
   sfx: Sfx;
   onDone: () => void;
 }) {
@@ -67,6 +69,16 @@ export function RoleReveal({
           </div>
         </div>
       </div>
+      {secretTeamName && (
+        <div
+          className="glass-alert gold"
+          style={{ textAlign: "center", maxWidth: 340, fontSize: 13 }}
+        >
+          🕵️ Y hay más: aunque se te vea jugando en tu equipo visible, en
+          secreto ganas para <strong>{secretTeamName}</strong>. Nadie más lo
+          sabe.
+        </div>
+      )}
       <div className="reveal-progress-track">
         <div
           className="reveal-progress-fill"

@@ -374,7 +374,7 @@ input {
   pointer-events: none;
 }
 
-/* El corazón que el Saboteador le roba al rival, viajando de un lado al otro */
+/* El corazón que el Gato le roba al rival, viajando de un lado al otro */
 @keyframes steal-heart {
   0% {
     transform: translateX(-22px) scale(0.8);
@@ -1010,5 +1010,84 @@ input {
     animation: none;
     transform: scaleX(1);
     opacity: 0.6;
+  }
+}
+
+/* ====================================================================
+   Sabotaje del Taquizoíto: las opciones de la pregunta se ven muy
+   glitcheadas mientras el Linfocito no te haya curado (o inmunizado tu
+   equipo) — a propósito, al punto de ser casi ilegibles. Solo dificulta
+   leerlas, no cambia la respuesta real.
+   ==================================================================== */
+
+.sabotaged {
+  position: relative;
+  animation:
+    sabotage-jitter 0.12s infinite,
+    sabotage-blackout 1.4s infinite;
+  text-shadow:
+    -3px 0 var(--danger),
+    3px 0 var(--accent-2),
+    0 0 10px var(--danger);
+}
+
+@keyframes sabotage-jitter {
+  0%,
+  100% {
+    transform: translate(0, 0) skewX(0deg);
+  }
+  20% {
+    transform: translate(-3px, 2px) skewX(-3deg);
+  }
+  40% {
+    transform: translate(3px, -2px) skewX(3deg);
+  }
+  60% {
+    transform: translate(-2px, -3px) skewX(-2deg);
+  }
+  80% {
+    transform: translate(2px, 3px) skewX(2deg);
+  }
+}
+
+@keyframes sabotage-blackout {
+  0%,
+  80%,
+  100% {
+    opacity: 1;
+    filter: blur(0);
+  }
+  84% {
+    opacity: 0.15;
+    filter: blur(5px);
+  }
+  87% {
+    opacity: 1;
+    filter: blur(0);
+  }
+  90% {
+    opacity: 0.2;
+    filter: blur(6px);
+  }
+  93% {
+    opacity: 1;
+    filter: blur(0);
+  }
+}
+
+.sabotage-banner {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: var(--gold);
+  margin-bottom: 4px;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .sabotaged {
+    animation: none;
+    opacity: 0.5;
+    filter: blur(1.5px);
   }
 }

@@ -7,6 +7,7 @@ import {
 } from "react";
 import { Ash } from "../components/Ash";
 import { Confetti } from "../components/Confetti";
+import { ExtraSkillPanel } from "../components/ExtraSkillPanel";
 import { Hearts } from "../components/Hearts";
 import { LifeEventOverlay } from "../components/LifeEventOverlay";
 import { MuteButton } from "../components/MuteButton";
@@ -23,7 +24,16 @@ import { useMuted } from "../hooks/useMuted";
 import { usePlayerId } from "../hooks/usePlayerId";
 import { useRoom } from "../hooks/useRoom";
 import { Sfx, useSfx } from "../hooks/useSfx";
-import { eligibleTargets, getQuestionById } from "../lib/gameEngine";
+import {
+  eligibleTargets,
+  findInfiltrado,
+  getQuestionById,
+  hibernateBonusMs,
+  isAlive,
+  isSabotaged,
+  myEliminatedIndices,
+  rushPenaltyMs,
+} from "../lib/gameEngine";
 import {
   joinRoom,
   resolvePower,
@@ -39,6 +49,7 @@ import {
   PendingPower,
   PlayerState,
   RoomState,
+  TEAM_IDS,
   TrueFalseQuestion,
 } from "../types";
 
@@ -135,6 +146,7 @@ export function Player({ onExit }: { onExit: () => void }) {
     return (
       <RoleReveal
         roleId={me.role}
+        secretTeamName={me.infiltradoFor ? room.teams[me.infiltradoFor].name : null}
         sfx={sfx}
         onDone={() => setRoleSeen(true)}
       />
@@ -220,13 +232,26 @@ export function Player({ onExit }: { onExit: () => void }) {
       <StreakBadge streak={me.roundWinStreak} size={13} />
 
       {!room.currentChallenge && (
-        <div style={{ textAlign: "center", marginTop: 8 }}>
-          <div style={{ fontFamily: "'Fredoka', sans-serif", fontSize: 20 }}>
-            Prepárate&hellip;
+        <div
+          style={{
+            width: "100%",
+            maxWidth: 420,
+            display: "flex",
+            flexDirection: "column",
+            alignItems: "center",
+            gap: 16,
+            marginTop: 8,
+          }}
+        >
+          <div style={{ textAlign: "center" }}>
+            <div style={{ fontFamily: "'Fredoka', sans-serif", fontSize: 20 }}>
+              Prepárate&hellip;
+            </div>
+            <div style={{ color: "var(--text-muted)", fontSize: 14 }}>
+              La próxima pregunta es para todos a la vez.
+            </div>
           </div>
-          <div style={{ color: "var(--text-muted)", fontSize: 14 }}>
-            La próxima pregunta es para todos a la vez.
-          </div>
+          <WaitingRoomPanel room={room} me={me} />
         </div>
       )}
 
@@ -258,7 +283,9 @@ function FinishedPlayerView({
   sfx: Sfx;
 }) {
   const myTeamId = me.team;
-  const isWinner = room.winnerTeamId === myTeamId;
+  const isWinner =
+    room.winnerTeamId === myTeamId || room.winnerTeamId === me.infiltradoFor;
+  const infiltrado = findInfiltrado(room.players);
   const { playVictory, playDefeat } = sfx;
 
   useEffect(() => {
@@ -317,6 +344,21 @@ function FinishedPlayerView({
           <strong style={{ color: ROLES[me.role].color }}>
             {ROLES[me.role].name}
           </strong>
+        </div>
+      )}
+      {infiltrado && (
+        <div
+          className="glass-alert gold"
+          style={{ fontSize: 13, textAlign: "center", maxWidth: 380 }}
+        >
+          🕵️ <strong>{infiltrado.player.name}</strong> era un infiltrado: jugaba
+          en{" "}
+          {infiltrado.player.team ? room.teams[infiltrado.player.team].name : "?"}
+          , pero en secreto ganaba para{" "}
+          {infiltrado.player.infiltradoFor
+            ? room.teams[infiltrado.player.infiltradoFor].name
+            : "?"}
+          .
         </div>
       )}
     </div>
@@ -537,6 +579,94 @@ function JoinForm({
   );
 }
 
+/** Mientras se espera la próxima pregunta: tu equipo (roles ocultos) y el ranking de los 3 equipos. */
+function WaitingRoomPanel({ room, me }: { room: RoomState; me: PlayerState }) {
+  if (!me.team) return null;
+  const myTeam = room.teams[me.team];
+  const teammates = myTeam.playerIds
+    .map((id) => ({ id, player: room.players[id] }))
+    .filter((x) => !!x.player);
+
+  const ranking = TEAM_IDS.map((id) => {
+    const team = room.teams[id];
+    const playerStates = team.playerIds.map((pid) => room.players[pid]).filter(Boolean);
+    const totalLives = playerStates.reduce((sum, p) => sum + p.lives, 0);
+    const aliveCount = playerStates.filter((p) => isAlive(p)).length;
+    return { id, team, totalLives, aliveCount };
+  }).sort((a, b) => b.totalLives - a.totalLives);
+
+  return (
+    <div
+      className="card"
+      style={{ width: "100%", display: "flex", flexDirection: "column", gap: 14 }}
+    >
+      <div>
+        <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 8 }}>
+          Tu equipo
+        </div>
+        <div style={{ display: "flex", flexWrap: "wrap", gap: 10 }}>
+          {teammates.map(({ id, player }) => (
+            <div
+              key={id}
+              style={{
+                display: "flex",
+                flexDirection: "column",
+                alignItems: "center",
+                gap: 4,
+                width: 64,
+              }}
+            >
+              <PlayerBean color={myTeam.color} alive={player.lives > 0} size={34} />
+              <div
+                style={{
+                  fontSize: 11,
+                  textAlign: "center",
+                  maxWidth: 64,
+                  overflow: "hidden",
+                  textOverflow: "ellipsis",
+                  whiteSpace: "nowrap",
+                }}
+              >
+                {player.name}
+              </div>
+              <Hearts lives={player.lives} size={9} />
+            </div>
+          ))}
+        </div>
+      </div>
+      <div>
+        <div style={{ fontSize: 12, color: "var(--text-muted)", marginBottom: 8 }}>
+          Ranking de equipos
+        </div>
+        <div style={{ display: "flex", flexDirection: "column", gap: 6 }}>
+          {ranking.map((r, index) => (
+            <div
+              key={r.id}
+              style={{
+                display: "flex",
+                alignItems: "center",
+                justifyContent: "space-between",
+                background: "var(--surface-2)",
+                borderRadius: 10,
+                padding: "6px 12px",
+                fontSize: 13,
+                border: r.id === me.team ? `1px solid ${r.team.color}88` : undefined,
+              }}
+            >
+              <span>
+                {index + 1}. {r.team.name}
+              </span>
+              <span style={{ color: "var(--text-muted)" }}>
+                {r.aliveCount === 0 ? "eliminado" : `${r.totalLives} vidas`}
+              </span>
+            </div>
+          ))}
+        </div>
+      </div>
+    </div>
+  );
+}
+
 function ChallengeArea({
   room,
   playerId,
@@ -570,7 +700,12 @@ function ChallengeArea({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [challenge.revealed, challenge.questionId]);
 
-  const urgent = useUrgent(challenge.deadline);
+  // El Taquizoíto puede apurar (recorta el cronómetro visible) y el
+  // Bradizoíto puede hibernar (lo estira) — solo mientras se responde, no
+  // afecta el momento real en que el anfitrión cierra la ronda.
+  const effectiveDeadline =
+    challenge.deadline - rushPenaltyMs(room, challenge, playerId) + hibernateBonusMs(challenge, playerId);
+  const urgent = useUrgent(effectiveDeadline);
 
   if (!question) return null;
 
@@ -580,74 +715,82 @@ function ChallengeArea({
     await submitAnswer(room.code, playerId, payload);
   }
 
+  const sabotaged = isSabotaged(room, challenge, playerId);
+
   if (!challenge.revealed) {
-    if (myAnswer) {
-      return (
-        <div
-          className={`glass-alert card-settle${urgent ? " card-dim-urgent" : ""}`}
-          style={{
-            width: "100%",
-            maxWidth: 480,
-            marginTop: 12,
-            textAlign: "center",
-          }}
-        >
-          <div style={{ fontFamily: "'Fredoka', sans-serif", fontSize: 20 }}>
-            Respuesta enviada
-          </div>
-          <div
-            style={{ color: "var(--text-muted)", fontSize: 14, marginTop: 8 }}
-          >
-            Esperando a los demás&hellip;{" "}
-            <Countdown deadline={challenge.deadline} />
-          </div>
-        </div>
-      );
-    }
-    if (question.type === "multiple-choice") {
-      return (
-        <>
-          <UrgentFlash active={urgent} />
-          <MultipleChoiceForm
-            key={question.id}
-            question={question}
-            deadline={challenge.deadline}
-            urgent={urgent}
-            onSubmit={(index) => send({ type: "multiple-choice", index })}
-          />
-        </>
-      );
-    }
-    if (question.type === "true-false") {
-      return (
-        <>
-          <UrgentFlash active={urgent} />
-          <TrueFalseForm
-            key={question.id}
-            question={question}
-            deadline={challenge.deadline}
-            urgent={urgent}
-            onSubmit={(value) => send({ type: "true-false", value })}
-          />
-        </>
-      );
-    }
     return (
-      <>
-        <UrgentFlash active={urgent} />
-        <OrderForm
-          key={question.id}
-          question={question}
-          deadline={challenge.deadline}
-          urgent={urgent}
-          onSubmit={(steps) => send({ type: "order", steps })}
-        />
-      </>
+      <div
+        style={{
+          width: "100%",
+          maxWidth: 480,
+          display: "flex",
+          flexDirection: "column",
+          gap: 10,
+          marginTop: 12,
+        }}
+      >
+        <ExtraSkillPanel room={room} playerId={playerId} challenge={challenge} question={question} />
+        {myAnswer ? (
+          <div
+            className={`glass-alert card-settle${urgent ? " card-dim-urgent" : ""}`}
+            style={{ textAlign: "center" }}
+          >
+            <div style={{ fontFamily: "'Fredoka', sans-serif", fontSize: 20 }}>
+              Respuesta enviada
+            </div>
+            <div
+              style={{ color: "var(--text-muted)", fontSize: 14, marginTop: 8 }}
+            >
+              Esperando a los demás&hellip;{" "}
+              <Countdown deadline={challenge.deadline} />
+            </div>
+          </div>
+        ) : (
+          <>
+            <UrgentFlash active={urgent} />
+            {question.type === "multiple-choice" && (
+              <MultipleChoiceForm
+                key={question.id}
+                question={question}
+                deadline={effectiveDeadline}
+                urgent={urgent}
+                sabotaged={sabotaged}
+                eliminatedIndices={myEliminatedIndices(challenge, playerId)}
+                onSubmit={(index) => send({ type: "multiple-choice", index })}
+              />
+            )}
+            {question.type === "true-false" && (
+              <TrueFalseForm
+                key={question.id}
+                question={question}
+                deadline={effectiveDeadline}
+                urgent={urgent}
+                sabotaged={sabotaged}
+                onSubmit={(value) => send({ type: "true-false", value })}
+              />
+            )}
+            {question.type === "order" && (
+              <OrderForm
+                key={question.id}
+                question={question}
+                deadline={effectiveDeadline}
+                urgent={urgent}
+                sabotaged={sabotaged}
+                onSubmit={(steps) => send({ type: "order", steps })}
+              />
+            )}
+          </>
+        )}
+      </div>
     );
   }
 
   // Ya se reveló el resultado de la ronda.
   const correct = myAnswer?.correct ?? false;
+  const myExtraSkill = challenge.extraSkills?.[playerId];
+  const wasRobbed = Object.values(challenge.extraSkills ?? {}).some(
+    (use) => use.type === "steal" && use.success && use.targetId === playerId,
+  );
 
   return (
     <div
@@ -673,14 +816,29 @@ function ChallengeArea({
         >
           {correct
             ? "¡Correcto!"
-            : myAnswer
-              ? "Incorrecto"
-              : "No respondiste a tiempo"}
+            : wasRobbed
+              ? "Te robaron la respuesta"
+              : myAnswer
+                ? "Incorrecto"
+                : "No respondiste a tiempo"}
         </div>
         <div style={{ color: "var(--text-muted)", fontSize: 14, marginTop: 8 }}>
-          {question.explanation}
+          {wasRobbed
+            ? "Un rival te robó la respuesta esta ronda — para efectos de la ronda, cuenta como si no hubieras respondido."
+            : question.explanation}
         </div>
       </div>
+
+      {myExtraSkill?.type === "steal" && (
+        <div
+          className={`glass-alert ${myExtraSkill.success ? "good card-punch" : "card-settle"}`}
+          style={{ textAlign: "center", fontSize: 14 }}
+        >
+          {myExtraSkill.success
+            ? <>Le robaste la respuesta a <strong>{room.players[myExtraSkill.targetId]?.name}</strong>.</>
+            : <>Intentaste robarle la respuesta a <strong>{room.players[myExtraSkill.targetId]?.name}</strong>, pero no funcionó.</>}
+        </div>
+      )}
 
       {challenge.pendingPower && (
         <PowerPhase
@@ -701,6 +859,8 @@ function ChallengeArea({
           Nadie ganó el poder esta ronda. Espera la siguiente pregunta.
         </div>
       )}
+
+      <WaitingRoomPanel room={room} me={room.players[playerId]} />
     </div>
   );
 }
@@ -857,11 +1017,15 @@ function MultipleChoiceForm({
   question,
   deadline,
   urgent,
+  sabotaged,
+  eliminatedIndices,
   onSubmit,
 }: {
   question: MultipleChoiceQuestion;
   deadline: number;
   urgent: boolean;
+  sabotaged: boolean;
+  eliminatedIndices: number[];
   onSubmit: (index: number) => void;
 }) {
   return (
@@ -887,7 +1051,11 @@ function MultipleChoiceForm({
         <span>Trivia rápida</span>
         <Countdown deadline={deadline} />
       </div>
+      {sabotaged && (
+        <div className="sabotage-banner">🦠 ¡Te sabotearon! Cuesta más leer.</div>
+      )}
       <div
+        className={sabotaged ? "sabotaged" : undefined}
         style={{
           fontFamily: "'Fredoka', sans-serif",
           fontSize: 19,
@@ -897,24 +1065,34 @@ function MultipleChoiceForm({
         {question.prompt}
       </div>
       <div style={{ display: "flex", flexDirection: "column", gap: 10 }}>
-        {question.options.map((option, index) => (
-          <button
-            key={index}
-            onClick={() => onSubmit(index)}
-            style={{
-              background: "var(--surface-2)",
-              border: "2px solid rgba(255,255,255,0.1)",
-              borderRadius: 14,
-              padding: 16,
-              color: "var(--text)",
-              fontSize: 16,
-              fontWeight: 600,
-              textAlign: "left",
-            }}
-          >
-            {option}
-          </button>
-        ))}
+        {question.options.map((option, index) => {
+          const eliminated = eliminatedIndices.includes(index);
+          return (
+            <button
+              key={index}
+              onClick={() => !eliminated && onSubmit(index)}
+              disabled={eliminated}
+              style={{
+                background: "var(--surface-2)",
+                border: "2px solid rgba(255,255,255,0.1)",
+                borderRadius: 14,
+                padding: 16,
+                color: "var(--text)",
+                fontSize: 16,
+                fontWeight: 600,
+                textAlign: "left",
+                opacity: eliminated ? 0.35 : 1,
+              }}
+            >
+              <span
+                className={sabotaged ? "sabotaged" : undefined}
+                style={eliminated ? { textDecoration: "line-through" } : undefined}
+              >
+                {option}
+              </span>
+            </button>
+          );
+        })}
       </div>
     </div>
   );
@@ -924,11 +1102,13 @@ function TrueFalseForm({
   question,
   deadline,
   urgent,
+  sabotaged,
   onSubmit,
 }: {
   question: TrueFalseQuestion;
   deadline: number;
   urgent: boolean;
+  sabotaged: boolean;
   onSubmit: (value: boolean) => void;
 }) {
   return (
@@ -954,7 +1134,11 @@ function TrueFalseForm({
         <span>Verdadero o falso</span>
         <Countdown deadline={deadline} />
       </div>
+      {sabotaged && (
+        <div className="sabotage-banner">🦠 ¡Te sabotearon! Cuesta más leer.</div>
+      )}
       <div
+        className={sabotaged ? "sabotaged" : undefined}
         style={{
           fontFamily: "'Fredoka', sans-serif",
           fontSize: 19,
@@ -1001,11 +1185,13 @@ function OrderForm({
   question,
   deadline,
   urgent,
+  sabotaged,
   onSubmit,
 }: {
   question: OrderQuestion;
   deadline: number;
   urgent: boolean;
+  sabotaged: boolean;
   onSubmit: (steps: string[]) => void;
 }) {
   const [steps, setSteps] = useState<string[]>(() =>
@@ -1043,6 +1229,9 @@ function OrderForm({
         <span>Ordenar el ciclo</span>
         <Countdown deadline={deadline} />
       </div>
+      {sabotaged && (
+        <div className="sabotage-banner">🦠 ¡Te sabotearon! Cuesta más leer.</div>
+      )}
       <div
         style={{
           fontFamily: "'Fredoka', sans-serif",
@@ -1085,7 +1274,12 @@ function OrderForm({
             >
               {index + 1}
             </div>
-            <div style={{ flex: 1, fontSize: 14 }}>{step}</div>
+            <div
+              className={sabotaged ? "sabotaged" : undefined}
+              style={{ flex: 1, fontSize: 14 }}
+            >
+              {step}
+            </div>
             <div style={{ display: "flex", flexDirection: "column", gap: 2 }}>
               <button
                 onClick={() => move(index, -1)}

@@ -5,7 +5,7 @@ export type LifeEventType = "hit" | "died" | "gained" | "revived" | "streak";
 
 export interface LifeEvent {
   type: LifeEventType;
-  delta: number; // cuántas vidas cambiaron (siempre positivo, ej. 2 si el Impostor golpeó doble)
+  delta: number; // cuántas vidas cambiaron (siempre positivo)
   key: number; // cambia siempre, así se puede volver a disparar la animación en el mismo tipo
 }
 

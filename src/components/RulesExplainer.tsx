@@ -46,6 +46,19 @@ export function RulesExplainer() {
           Si te quedas sin vidas, quedas eliminado — pero puedes seguir
           viendo la partida.
         </li>
+        <li>
+          Cada rol también tiene{" "}
+          <strong style={{ color: "var(--text)" }}>habilidades extra</strong>{" "}
+          que puede usar mientras se responde, sin ganar la ronda — una por
+          ronda (algunas, además, solo una vez en toda la partida; detalle
+          abajo).
+        </li>
+        <li>
+          A veces el Gato de la partida es además un{" "}
+          <strong style={{ color: "var(--text)" }}>infiltrado</strong>: juega
+          visiblemente en un equipo pero en secreto gana para otro. Se
+          revela al terminar la partida.
+        </li>
         <li>Gana el último equipo que quede con jugadores en pie.</li>
       </ul>
 
@@ -78,6 +91,69 @@ export function RulesExplainer() {
             <span style={{ color: "var(--text-muted)" }}>{role.tagline}</span>
           </div>
         ))}
+      </div>
+
+      <div
+        style={{
+          fontFamily: "'Fredoka', sans-serif",
+          fontSize: 14,
+          marginTop: 16,
+          marginBottom: 8,
+        }}
+      >
+        Habilidades extra
+      </div>
+      <div style={{ display: "flex", flexDirection: "column", gap: 8 }}>
+        <div style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12 }}>
+          <span style={{ color: "var(--danger)", fontWeight: 700, minWidth: 100 }}>
+            Gato
+          </span>
+          <span style={{ color: "var(--text-muted)" }}>
+            Puede intentar robarle la respuesta a un rival (20% de éxito): si
+            funciona, el rival se queda sin respuesta y el Gato usa la
+            suya.
+          </span>
+        </div>
+        <div style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12 }}>
+          <span style={{ color: "var(--gold)", fontWeight: 700, minWidth: 100 }}>
+            Taquizoíto
+          </span>
+          <span style={{ color: "var(--text-muted)" }}>
+            Puede sabotear a un rival (se le ve la pregunta glitcheada) o
+            apurarlo: le recorta unos segundos al cronómetro que ve mientras
+            responde.
+          </span>
+        </div>
+        <div style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12 }}>
+          <span style={{ color: "var(--success)", fontWeight: 700, minWidth: 100 }}>
+            Linfocito
+          </span>
+          <span style={{ color: "var(--text-muted)" }}>
+            Puede curar a un compañero (o a sí mismo): si le iban a robar la
+            respuesta, sabotearlo o apurarlo esa ronda, se cancela. Una vez
+            por partida, en cambio, puede inmunizar a todo su equipo por esa
+            ronda.
+          </span>
+        </div>
+        <div style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12 }}>
+          <span style={{ color: "var(--accent-2)", fontWeight: 700, minWidth: 100 }}>
+            Bradizoíto
+          </span>
+          <span style={{ color: "var(--text-muted)" }}>
+            En preguntas de opción múltiple, puede usar un 50/50: elimina 2
+            opciones incorrectas para sí mismo. O puede hibernar, para
+            ganar unos segundos extra de tiempo esa ronda.
+          </span>
+        </div>
+        <div style={{ display: "flex", gap: 8, alignItems: "flex-start", fontSize: 12 }}>
+          <span style={{ color: "var(--accent)", fontWeight: 700, minWidth: 100 }}>
+            Hospedador
+          </span>
+          <span style={{ color: "var(--text-muted)" }}>
+            Puede intentar espiar la respuesta de un compañero (50% de
+            éxito) mientras responde.
+          </span>
+        </div>
       </div>
 
       <div
