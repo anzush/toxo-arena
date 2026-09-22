@@ -1,11 +1,15 @@
+import { randomRole } from "../data/roles";
 import { QUESTIONS } from "../data/questions";
 import {
   AnswerPayload,
   ChallengeType,
+  PendingPower,
   PlayerState,
   Question,
+  RoleId,
   RoomState,
-  STARTING_LIVES,
+  STARTING_LIVES_PER_PLAYER,
+  SubmittedAnswer,
   TEAM_IDS,
   TEAM_META,
   TeamId,
@@ -25,72 +29,74 @@ export function shuffle<T>(items: T[]): T[] {
 export function createEmptyTeams(): Record<TeamId, TeamState> {
   const teams = {} as Record<TeamId, TeamState>;
   for (const id of TEAM_IDS) {
-    teams[id] = {
-      name: TEAM_META[id].name,
-      color: TEAM_META[id].color,
-      lives: STARTING_LIVES,
-      playerIds: []
-    };
+    teams[id] = { name: TEAM_META[id].name, color: TEAM_META[id].color, playerIds: [] };
   }
   return teams;
 }
 
 /**
- * Reparte aleatoriamente los jugadores conectados entre los 3 equipos,
- * lo más parejo posible (esto es "la gracia" del sorteo).
+ * Reparte a los jugadores al azar entre los 3 equipos y a cada uno le
+ * asigna también un rol al azar (con sus vidas propias). Esta es "la
+ * gracia" del sorteo: nadie sabe qué le tocó a los demás.
  */
 export function assignPlayersToTeams(
   players: Record<string, PlayerState>
 ): { teams: Record<TeamId, TeamState>; players: Record<string, PlayerState> } {
   const teams = createEmptyTeams();
   const playerIds = shuffle(Object.keys(players));
-
   const updatedPlayers: Record<string, PlayerState> = { ...players };
 
   playerIds.forEach((playerId, index) => {
     const teamId = TEAM_IDS[index % TEAM_IDS.length];
     teams[teamId].playerIds.push(playerId);
-    updatedPlayers[playerId] = { ...updatedPlayers[playerId], team: teamId };
+    updatedPlayers[playerId] = {
+      ...updatedPlayers[playerId],
+      team: teamId,
+      role: randomRole(),
+      lives: STARTING_LIVES_PER_PLAYER,
+      shielded: false,
+      powerUsed: false
+    };
   });
 
   return { teams, players: updatedPlayers };
 }
 
-export function aliveTeams(teams: Record<TeamId, TeamState>): TeamId[] {
-  return TEAM_IDS.filter((id) => teams[id].lives > 0);
+export function isAlive(player: PlayerState | undefined | null): boolean {
+  return !!player && player.team !== null && player.lives > 0;
 }
 
-/** Da el siguiente equipo vivo en el orden de turnos, empezando desde el índice dado. */
-export function nextAliveTeamIndex(
-  turnOrder: TeamId[],
-  teams: Record<TeamId, TeamState>,
-  fromIndex: number
-): number {
-  for (let step = 1; step <= turnOrder.length; step++) {
-    const idx = (fromIndex + step) % turnOrder.length;
-    if (teams[turnOrder[idx]].lives > 0) return idx;
+export function teamPlayers(teamId: TeamId, teams: Record<TeamId, TeamState>, players: Record<string, PlayerState>) {
+  return teams[teamId].playerIds.map((id) => ({ id, player: players[id] })).filter((x) => !!x.player);
+}
+
+export function aliveTeams(teams: Record<TeamId, TeamState>, players: Record<string, PlayerState>): TeamId[] {
+  return TEAM_IDS.filter((id) => teams[id].playerIds.some((pid) => isAlive(players[pid])));
+}
+
+export interface WinnerCheck {
+  finished: boolean;
+  winnerTeamId: TeamId | null;
+}
+
+export function checkWinner(teams: Record<TeamId, TeamState>, players: Record<string, PlayerState>): WinnerCheck {
+  const alive = aliveTeams(teams, players);
+  if (alive.length <= 1) {
+    return { finished: true, winnerTeamId: alive[0] ?? null };
   }
-  return fromIndex;
+  return { finished: false, winnerTeamId: null };
 }
 
-/** Elige una pregunta al azar de un tipo permitido que no se haya usado todavía. */
-export function pickRandomQuestion(
-  usedQuestionIds: string[],
-  allowedTypes: ChallengeType[]
-): Question | null {
-  const pool = QUESTIONS.filter(
-    (q) => allowedTypes.includes(q.type) && !usedQuestionIds.includes(q.id)
-  );
+export function pickRandomQuestion(usedQuestionIds: string[], allowedTypes: ChallengeType[]): Question | null {
+  const pool = QUESTIONS.filter((q) => allowedTypes.includes(q.type) && !usedQuestionIds.includes(q.id));
   if (pool.length === 0) return null;
-  const shuffled = shuffle(pool);
-  return shuffled[0];
+  return shuffle(pool)[0];
 }
 
 export function getQuestionById(id: string): Question | undefined {
   return QUESTIONS.find((q) => q.id === id);
 }
 
-/** Compara la respuesta enviada contra la pregunta y dice si fue correcta. */
 export function checkAnswer(question: Question, payload: AnswerPayload): boolean {
   if (question.type === "multiple-choice" && payload.type === "multiple-choice") {
     return payload.index === question.correctIndex;
@@ -105,36 +111,156 @@ export function checkAnswer(question: Question, payload: AnswerPayload): boolean
   return false;
 }
 
-export interface ResolveResult {
-  teams: Record<TeamId, TeamState>;
-  eliminatedTeamId: TeamId | null;
-  winnerTeamId: TeamId | null;
-  nextTurnIndex: number;
+export interface RoundResolution {
+  players: Record<string, PlayerState>;
+  answers: Record<string, SubmittedAnswer>;
+  pendingPower: PendingPower | null;
 }
 
 /**
- * Aplica el resultado de un reto: si falló, resta una vida a su equipo,
- * revisa si quedó eliminado y si ya hay un equipo ganador, y calcula
- * a quién le toca el siguiente turno.
+ * Cierra la ronda de respuestas simultáneas: a todo el que respondió mal
+ * (o no respondió a tiempo) le quita una vida propia (salvo que tenga
+ * escudo), y calcula quién fue el más rápido en acertar para darle el
+ * poder de su rol.
  */
-export function resolveChallenge(room: RoomState, isCorrect: boolean): ResolveResult {
-  const teamId = room.currentChallenge!.teamId;
-  const teams: Record<TeamId, TeamState> = {
-    ...room.teams,
-    [teamId]: { ...room.teams[teamId] }
-  };
+export function resolveRound(room: RoomState, question: Question, now: number): RoundResolution {
+  const challenge = room.currentChallenge!;
+  const players: Record<string, PlayerState> = { ...room.players };
+  const answers: Record<string, SubmittedAnswer> = { ...challenge.answers };
 
-  if (!isCorrect) {
-    teams[teamId].lives = Math.max(0, teams[teamId].lives - 1);
+  let winnerId: string | null = null;
+  let winnerAt = Infinity;
+
+  for (const [playerId, player] of Object.entries(room.players)) {
+    if (!isAlive(player)) continue; // no jugaba esta ronda
+
+    const submitted = challenge.answers?.[playerId];
+    const correct = !!submitted && checkAnswer(question, submitted.payload);
+
+    if (submitted) {
+      answers[playerId] = { ...submitted, correct };
+    }
+
+    if (correct) {
+      if (submitted!.submittedAt < winnerAt) {
+        winnerAt = submitted!.submittedAt;
+        winnerId = playerId;
+      }
+    } else {
+      // Falló o no respondió a tiempo: pierde una vida propia, salvo escudo.
+      if (player.shielded) {
+        players[playerId] = { ...player, shielded: false };
+      } else {
+        players[playerId] = { ...player, lives: Math.max(0, player.lives - 1) };
+      }
+    }
   }
 
-  const eliminatedTeamId = teams[teamId].lives === 0 ? teamId : null;
-  const alive = aliveTeams(teams);
-  const winnerTeamId = alive.length === 1 ? alive[0] : null;
+  let pendingPower: PendingPower | null = null;
+  if (winnerId) {
+    pendingPower = {
+      playerId: winnerId,
+      role: players[winnerId].role as RoleId,
+      deadline: now + 15_000,
+      targetPlayerId: null,
+      resolved: false
+    };
+  }
 
-  const nextTurnIndex = winnerTeamId
-    ? room.currentTurnIndex
-    : nextAliveTeamIndex(room.turnOrder, teams, room.currentTurnIndex);
+  return { players, answers, pendingPower };
+}
 
-  return { teams, eliminatedTeamId, winnerTeamId, nextTurnIndex };
+export interface EligibleTargets {
+  effectiveRole: RoleId;
+  targets: string[];
+}
+
+/**
+ * Según el rol de quien ganó la ronda (y si ya gastó su poder de un solo
+ * uso), calcula a quién puede apuntar. Médico y Chamán, si ya no tienen
+ * su poder especial disponible, caen de vuelta al ataque simple de
+ * Tripulante para que su turno nunca se desperdicie.
+ */
+export function eligibleTargets(room: RoomState, pendingPower: PendingPower): EligibleTargets {
+  const winner = room.players[pendingPower.playerId];
+  const winnerTeam = winner.team as TeamId;
+  const rivals = TEAM_IDS.filter((id) => id !== winnerTeam).flatMap((id) =>
+    teamPlayers(id, room.teams, room.players)
+      .filter((x) => isAlive(x.player))
+      .map((x) => x.id)
+  );
+
+  if (pendingPower.role === "medico" && !winner.powerUsed) {
+    const teammates = teamPlayers(winnerTeam, room.teams, room.players)
+      .filter((x) => isAlive(x.player))
+      .map((x) => x.id);
+    return { effectiveRole: "medico", targets: teammates };
+  }
+
+  if (pendingPower.role === "chaman" && !winner.powerUsed) {
+    const eliminatedTeammates = teamPlayers(winnerTeam, room.teams, room.players)
+      .filter((x) => x.player.team !== null && x.player.lives === 0)
+      .map((x) => x.id);
+    if (eliminatedTeammates.length > 0) {
+      return { effectiveRole: "chaman", targets: eliminatedTeammates };
+    }
+  }
+
+  return { effectiveRole: pendingPower.role === "impostor" || pendingPower.role === "saboteador" ? pendingPower.role : "tripulante", targets: rivals };
+}
+
+/** Aplica el efecto del poder ya con un objetivo elegido (o autoasignado). */
+export function applyPower(
+  room: RoomState,
+  pendingPower: PendingPower,
+  targetId: string
+): Record<string, PlayerState> {
+  const { effectiveRole } = eligibleTargets(room, pendingPower);
+  const players: Record<string, PlayerState> = { ...room.players };
+  const winner = players[pendingPower.playerId];
+  const target = players[targetId];
+  if (!target) return players;
+
+  switch (effectiveRole) {
+    case "medico": {
+      players[targetId] = { ...target, shielded: true };
+      players[pendingPower.playerId] = { ...winner, powerUsed: true };
+      break;
+    }
+    case "chaman": {
+      players[targetId] = { ...target, lives: 1 };
+      players[pendingPower.playerId] = { ...winner, powerUsed: true };
+      break;
+    }
+    case "impostor": {
+      if (target.shielded) {
+        players[targetId] = { ...target, shielded: false };
+      } else {
+        players[targetId] = { ...target, lives: Math.max(0, target.lives - 2) };
+      }
+      break;
+    }
+    case "saboteador": {
+      if (target.shielded) {
+        players[targetId] = { ...target, shielded: false };
+      } else {
+        players[targetId] = { ...target, lives: Math.max(0, target.lives - 1) };
+        players[pendingPower.playerId] = {
+          ...winner,
+          lives: Math.min(STARTING_LIVES_PER_PLAYER, winner.lives + 1)
+        };
+      }
+      break;
+    }
+    default: {
+      // tripulante
+      if (target.shielded) {
+        players[targetId] = { ...target, shielded: false };
+      } else {
+        players[targetId] = { ...target, lives: Math.max(0, target.lives - 1) };
+      }
+    }
+  }
+
+  return players;
 }

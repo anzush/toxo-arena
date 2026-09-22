@@ -28,8 +28,9 @@ export default function App() {
       <div className="page" style={{ maxWidth: 560, margin: "0 auto" }}>
         <h1 style={{ fontSize: 28 }}>Falta configurar Firebase</h1>
         <p style={{ color: "var(--text-muted)", textAlign: "center" }}>
-          Copia <code>.env.example</code> a <code>.env.local</code> y completa los valores de tu
-          proyecto de Firebase (Realtime Database). Falta: {missingFirebaseConfig.join(", ")}.
+          Copia <code>.env.example</code> a <code>.env.local</code> y completa
+          los valores de tu proyecto de Firebase (Realtime Database). Falta:{" "}
+          {missingFirebaseConfig.join(", ")}.
         </p>
       </div>
     );
@@ -39,7 +40,10 @@ export default function App() {
   if (role === "player") return <Player onExit={backToStart} />;
 
   return (
-    <div className="page" style={{ justifyContent: "center", minHeight: "100vh" }}>
+    <div
+      className="page"
+      style={{ justifyContent: "center", minHeight: "100vh" }}
+    >
       <div style={{ display: "flex", alignItems: "center", gap: 14 }}>
         <div
           style={{
@@ -50,7 +54,7 @@ export default function App() {
             display: "flex",
             alignItems: "center",
             justifyContent: "center",
-            color: "var(--bg)"
+            color: "var(--bg)",
           }}
         >
           <svg width="28" height="28" viewBox="0 0 24 24" fill="currentColor">
@@ -62,11 +66,26 @@ export default function App() {
         </div>
         <h1 style={{ fontSize: 32, letterSpacing: 0.5 }}>TOXO ARENA</h1>
       </div>
-      <p style={{ color: "var(--text-muted)", textAlign: "center", marginTop: -8 }}>
+      <p
+        style={{
+          color: "var(--text-muted)",
+          textAlign: "center",
+          marginTop: -8,
+        }}
+      >
         Trivia por equipos sobre Toxoplasma gondii
       </p>
 
-      <div style={{ display: "flex", flexDirection: "column", gap: 16, width: "100%", maxWidth: 360, marginTop: 24 }}>
+      <div
+        style={{
+          display: "flex",
+          flexDirection: "column",
+          gap: 16,
+          width: "100%",
+          maxWidth: 360,
+          marginTop: 24,
+        }}
+      >
         <button className="btn-primary" onClick={() => chooseRole("host")}>
           Soy el anfitrión (tablero)
         </button>

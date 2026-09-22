@@ -1,16 +1,21 @@
 export type TeamId = "rojo" | "azul" | "verde";
 
-export interface TeamState {
-  name: string;
-  color: string;
-  lives: number;
-  playerIds: string[];
-}
+export type RoleId = "tripulante" | "impostor" | "medico" | "chaman" | "saboteador";
 
 export interface PlayerState {
   name: string;
   joinedAt: number;
   team: TeamId | null;
+  role: RoleId | null;
+  lives: number; // 0..STARTING_LIVES_PER_PLAYER
+  shielded: boolean; // protege la próxima vez que este jugador iba a perder una vida
+  powerUsed: boolean; // solo importa para médico/chamán: ya gastaron su poder de un solo uso
+}
+
+export interface TeamState {
+  name: string;
+  color: string;
+  playerIds: string[];
 }
 
 export type ChallengeType = "multiple-choice" | "true-false" | "order";
@@ -35,30 +40,47 @@ export interface TrueFalseQuestion extends BaseQuestion {
 
 export interface OrderQuestion extends BaseQuestion {
   type: "order";
-  // steps en el orden correcto; al jugador se le muestran mezclados
   steps: string[];
 }
 
 export type Question = MultipleChoiceQuestion | TrueFalseQuestion | OrderQuestion;
 
-// Lo que el jugador manda al responder, según el tipo de reto
 export type AnswerPayload =
   | { type: "multiple-choice"; index: number }
   | { type: "true-false"; value: boolean }
   | { type: "order"; steps: string[] };
 
-export type RoomStatus = "lobby" | "playing" | "finished";
+export interface SubmittedAnswer {
+  payload: AnswerPayload;
+  submittedAt: number;
+  correct: boolean | null; // se calcula al revelar; null mientras se está jugando la ronda
+}
+
+/**
+ * El "poder" que gana quien responda primero y bien. Se resuelve en dos
+ * pasos: primero se sabe quién ganó (y con qué rol), y luego esa persona
+ * (o el sistema, si se le acaba el tiempo) elige el objetivo.
+ */
+export interface PendingPower {
+  playerId: string;
+  role: RoleId;
+  deadline: number;
+  targetPlayerId: string | null;
+  resolved: boolean;
+}
 
 export interface CurrentChallenge {
   questionId: string;
   type: ChallengeType;
-  teamId: TeamId;
   startedAt: number;
-  answeredBy: string | null;
-  answerPayload: AnswerPayload | null;
-  isCorrect: boolean | null;
+  deadline: number;
+  answers: Record<string, SubmittedAnswer>;
   revealed: boolean;
+  roundWinnerPlayerId: string | null;
+  pendingPower: PendingPower | null;
 }
+
+export type RoomStatus = "lobby" | "playing" | "finished";
 
 export interface RoomState {
   code: string;
@@ -67,8 +89,6 @@ export interface RoomState {
   allowedTypes: ChallengeType[];
   teams: Record<TeamId, TeamState>;
   players: Record<string, PlayerState>;
-  turnOrder: TeamId[];
-  currentTurnIndex: number;
   currentChallenge: CurrentChallenge | null;
   usedQuestionIds: string[];
   winnerTeamId: TeamId | null;
@@ -82,5 +102,6 @@ export const TEAM_META: Record<TeamId, { name: string; color: string }> = {
   verde: { name: "Equipo Verde", color: "#52D68A" }
 };
 
-export const STARTING_LIVES = 5;
+export const STARTING_LIVES_PER_PLAYER = 3;
 export const CHALLENGE_SECONDS = 20;
+export const POWER_SECONDS = 15;
