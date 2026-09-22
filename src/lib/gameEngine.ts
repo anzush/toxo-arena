@@ -8,6 +8,7 @@ import {
   Question,
   RoleId,
   RoomState,
+  ROUND_WIN_STREAK_BONUS,
   STARTING_LIVES_PER_PLAYER,
   SubmittedAnswer,
   TEAM_IDS,
@@ -55,7 +56,8 @@ export function assignPlayersToTeams(
       role: randomRole(),
       lives: STARTING_LIVES_PER_PLAYER,
       shielded: false,
-      powerUsed: false
+      powerUsed: false,
+      roundWinStreak: 0
     };
   });
 
@@ -156,6 +158,27 @@ export function resolveRound(room: RoomState, question: Question, now: number): 
     }
   }
 
+  // Racha: gana la ronda = suma una; cualquier otro jugador que seguía en
+  // pie pero no ganó esta ronda, rompe la que traía. Cada 3 seguidas se
+  // gana una vida extra y la racha vuelve a empezar desde cero.
+  for (const [playerId, player] of Object.entries(room.players)) {
+    if (!isAlive(player)) continue;
+    if (playerId === winnerId) {
+      const streak = player.roundWinStreak + 1;
+      if (streak >= ROUND_WIN_STREAK_BONUS) {
+        players[playerId] = {
+          ...players[playerId],
+          roundWinStreak: 0,
+          lives: Math.min(STARTING_LIVES_PER_PLAYER, players[playerId].lives + 1)
+        };
+      } else {
+        players[playerId] = { ...players[playerId], roundWinStreak: streak };
+      }
+    } else if (player.roundWinStreak > 0) {
+      players[playerId] = { ...players[playerId], roundWinStreak: 0 };
+    }
+  }
+
   let pendingPower: PendingPower | null = null;
   if (winnerId) {
     pendingPower = {
@@ -206,7 +229,7 @@ export function eligibleTargets(room: RoomState, pendingPower: PendingPower): El
     }
   }
 
-  return { effectiveRole: pendingPower.role === "impostor" || pendingPower.role === "saboteador" ? pendingPower.role : "tripulante", targets: rivals };
+  return { effectiveRole: pendingPower.role === "impostor" || pendingPower.role === "parasito" ? pendingPower.role : "tripulante", targets: rivals };
 }
 
 /** Aplica el efecto del poder ya con un objetivo elegido (o autoasignado). */
@@ -240,7 +263,7 @@ export function applyPower(
       }
       break;
     }
-    case "saboteador": {
+    case "parasito": {
       if (target.shielded) {
         players[targetId] = { ...target, shielded: false };
       } else {

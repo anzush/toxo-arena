@@ -93,6 +93,81 @@ export const QUESTIONS: Question[] = [
     explanation: "No es necesario deshacerse del gato: basta con evitar el contacto directo con las heces o usar guantes y lavarse las manos."
   },
   {
+    id: "mc-11",
+    type: "multiple-choice",
+    prompt: "¿Cuál es una de las principales formas de transmisión de Toxoplasma gondii?",
+    options: ["Picadura de artrópodos", "Contacto directo entre animales", "Consumo de carne mal cocida", "Inhalación de aerosoles contaminados"],
+    correctIndex: 2,
+    explanation: "Ingerir carne con quistes tisulares mal cocida es una de las vías principales de infección, junto con el contacto con ooquistes esporulados."
+  },
+  {
+    id: "mc-12",
+    type: "multiple-choice",
+    prompt: "¿Cuáles son los métodos diagnósticos mencionados para la detección de Toxoplasma gondii?",
+    options: ["Hemograma y radiografía", "Cultivo bacteriano y antibiograma", "Serología (IgG/IgM) y PCR", "Coprología y biopsia hepática"],
+    correctIndex: 2,
+    explanation: "La serología detecta anticuerpos IgG/IgM y la PCR detecta material genético del parásito; son las herramientas diagnósticas más usadas."
+  },
+  {
+    id: "mc-13",
+    type: "multiple-choice",
+    prompt: "¿En qué hospedador ocurre la fase sexual de Toxoplasma gondii?",
+    options: ["Ovinos", "Aves de sangre caliente", "Gatos", "Bovinos"],
+    correctIndex: 2,
+    explanation: "Los félidos, principalmente el gato doméstico, son los únicos hospedadores donde el parásito completa su ciclo sexual."
+  },
+  {
+    // Respuesta inferida, no venía explícita en el material — verifícala contra tu fuente.
+    id: "mc-14",
+    type: "multiple-choice",
+    prompt: "A nivel de encéfalo, ¿cómo suelen presentarse las lesiones macroscópicas de la toxoplasmosis?",
+    options: ["Hepatomegalia y congestión", "Lesiones muy evidentes con necrosis extensa", "Poco evidentes, salvo focos o hemorragia en casos graves", "Consolidación pulmonar"],
+    correctIndex: 2,
+    explanation: "Las lesiones cerebrales suelen ser poco visibles a simple vista, salvo focos de necrosis o hemorragia en los casos más graves."
+  },
+  {
+    id: "mc-15",
+    type: "multiple-choice",
+    prompt: "¿Cuáles son las formas morfológicas de Toxoplasma gondii?",
+    options: ["Ooquiste, merozoíto y esquizonte", "Macrogamonte, microgameto y taquizoíto", "Taquizoíto, bradizoíto y esporozoíto", "Trofozoíto, merozoíto y ooquiste"],
+    correctIndex: 2,
+    explanation: "Las tres formas morfológicas del parásito son el taquizoíto (fase aguda), el bradizoíto (quistes tisulares) y el esporozoíto (dentro del ooquiste)."
+  },
+  {
+    id: "mc-16",
+    type: "multiple-choice",
+    prompt: "¿Cuánto mide aproximadamente un taquizoíto?",
+    options: ["10–15 µm de largo × 5–8 µm de ancho", "2 × 6–8 µm", "5–8 µm de largo", "4–6 µm de largo × 2–3 µm de ancho"],
+    correctIndex: 3,
+    explanation: "El taquizoíto mide alrededor de 4–6 µm de largo por 2–3 µm de ancho."
+  },
+  {
+    id: "mc-17",
+    type: "multiple-choice",
+    prompt: "¿Qué forma tiene el taquizoíto?",
+    options: ["Forma esférica", "Forma fusiforme", "Forma ovalada", "Forma de media luna o arco, con un extremo puntiagudo y otro redondeado"],
+    correctIndex: 3,
+    explanation: "El taquizoíto tiene forma de media luna o arco, con un extremo puntiagudo y otro redondeado."
+  },
+  {
+    // Respuesta inferida, no venía explícita en el material — verifícala contra tu fuente.
+    id: "mc-18",
+    type: "multiple-choice",
+    prompt: "Los focos de necrosis y mineralización asociados a aborto y muerte fetal, especialmente en pequeños rumiantes, ¿dónde se localizan principalmente?",
+    options: ["Encéfalo", "Pulmón", "Hígado", "Placenta"],
+    correctIndex: 3,
+    explanation: "La necrosis cotiledonaria de la placenta es la lesión clásica asociada al aborto por toxoplasmosis en ovejas y cabras."
+  },
+  {
+    // Respuesta inferida, no venía explícita en el material — verifícala contra tu fuente.
+    id: "mc-19",
+    type: "multiple-choice",
+    prompt: "¿Cuál de estas NO es una lesión macroscópica ocular descrita para la toxoplasmosis?",
+    options: ["Retinitis y coriorretinitis", "Áreas blanquecinas o grisáceas en la retina", "Hemorragias y vasculitis", "Desprendimiento total de retina"],
+    correctIndex: 3,
+    explanation: "Se describen retinitis, coriorretinitis, focos blanquecino-grisáceos y hemorragias o vasculitis; el desprendimiento total de retina no es una lesión típica descrita."
+  },
+  {
     id: "tf-1",
     type: "true-false",
     prompt: "Toxoplasma gondii solo puede transmitirse por contacto directo con gatos.",

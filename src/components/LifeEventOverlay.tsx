@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { LifeEvent } from "../hooks/useLifeEvents";
 import { Sfx } from "../hooks/useSfx";
+import { ROUND_WIN_STREAK_BONUS } from "../types";
 import { PlayerBean } from "./PlayerBean";
 import { Reaper } from "./Reaper";
 
@@ -29,7 +30,7 @@ export function LifeEventOverlay({
       playDeath();
     } else if (event.type === "hit") {
       playHit();
-    } else if (event.type === "gained" || event.type === "revived") {
+    } else if (event.type === "gained" || event.type === "revived" || event.type === "streak") {
       playSteal();
     }
     // Este componente se remonta con una `key` nueva por evento.
@@ -78,6 +79,12 @@ export function LifeEventOverlay({
       variant: "gold card-punch",
       headline: "Te revivieron",
       caption: "Vuelves a estar en pie.",
+    },
+    streak: {
+      backdrop: "gain",
+      variant: "gold card-punch",
+      headline: `¡Racha de ${ROUND_WIN_STREAK_BONUS} rondas!`,
+      caption: "Ganaste una vida extra por acertar tan rápido.",
     },
   }[event.type];
 

@@ -15,7 +15,8 @@ export function PlayerBean({
 }) {
   const height = size * 1.15;
   const isHit = event?.type === "hit" || event?.type === "died";
-  const isGain = event?.type === "gained" || event?.type === "revived";
+  const isGain =
+    event?.type === "gained" || event?.type === "revived" || event?.type === "streak";
 
   return (
     <div
@@ -90,7 +91,7 @@ export function PlayerBean({
       )}
       {isGain && (
         <span className="float-badge" style={{ color: "var(--success)" }}>
-          +{event?.delta ?? 1} 💚
+          +{event?.delta ?? 1} {event?.type === "streak" ? "🔥" : "💚"}
         </span>
       )}
     </div>

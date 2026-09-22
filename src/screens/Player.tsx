@@ -11,8 +11,12 @@ import { Hearts } from "../components/Hearts";
 import { LifeEventOverlay } from "../components/LifeEventOverlay";
 import { MuteButton } from "../components/MuteButton";
 import { PlayerBean } from "../components/PlayerBean";
+import { RoleReveal } from "../components/RoleReveal";
 import { RulesExplainer } from "../components/RulesExplainer";
+import { StreakBadge } from "../components/StreakBadge";
+import { UrgentFlash } from "../components/UrgentFlash";
 import { ROLES } from "../data/roles";
+import { useCountdown } from "../hooks/useCountdown";
 import { useLifeEvents } from "../hooks/useLifeEvents";
 import { useLifeVibration } from "../hooks/useLifeVibration";
 import { useMuted } from "../hooks/useMuted";
@@ -52,6 +56,11 @@ export function Player({ onExit }: { onExit: () => void }) {
   const [muted, toggleMuted] = useMuted();
   const sfx = useSfx(muted);
   useLifeVibration(myEvent);
+
+  const [roleSeen, setRoleSeen] = useState(false);
+  useEffect(() => {
+    if (room?.status === "lobby") setRoleSeen(false);
+  }, [room?.status]);
 
   if (!roomCode || (!loading && !room)) {
     return (
@@ -122,11 +131,26 @@ export function Player({ onExit }: { onExit: () => void }) {
     return <Centered>No quedaste asignado a un equipo todavía.</Centered>;
   }
 
+  if (me.role && !roleSeen) {
+    return (
+      <RoleReveal
+        roleId={me.role}
+        sfx={sfx}
+        onDone={() => setRoleSeen(true)}
+      />
+    );
+  }
+
   if (me.lives === 0) {
     return (
       <div
         className="page"
-        style={{ minHeight: "100vh", justifyContent: "center" }}
+        style={{
+          minHeight: "100vh",
+          justifyContent: "center",
+          background: "#2e2e36",
+          filter: "grayscale(1)",
+        }}
       >
         <Header
           name={me.name}
@@ -193,6 +217,7 @@ export function Player({ onExit }: { onExit: () => void }) {
         size={68}
       />
       <Hearts lives={me.lives} />
+      <StreakBadge streak={me.roundWinStreak} size={13} />
 
       {!room.currentChallenge && (
         <div style={{ textAlign: "center", marginTop: 8 }}>
@@ -397,13 +422,22 @@ function Centered({ children }: { children: ReactNode }) {
 }
 
 function Countdown({ deadline }: { deadline: number }) {
-  const [now, setNow] = useState(Date.now());
-  useEffect(() => {
-    const interval = setInterval(() => setNow(Date.now()), 250);
-    return () => clearInterval(interval);
-  }, []);
-  const seconds = Math.max(0, Math.ceil((deadline - now) / 1000));
-  return <span>{seconds}s</span>;
+  const seconds = useCountdown(deadline);
+  const urgent = seconds > 0 && seconds <= 5;
+  return (
+    <span
+      className={urgent ? "countdown-urgent" : undefined}
+      style={urgent ? { color: "var(--danger)", fontWeight: 700 } : undefined}
+    >
+      {seconds}s
+    </span>
+  );
+}
+
+/** true en los últimos 5 segundos (pero no cuando ya se acabó del todo). */
+function useUrgent(deadline: number): boolean {
+  const seconds = useCountdown(deadline);
+  return seconds > 0 && seconds <= 5;
 }
 
 function JoinForm({
@@ -536,6 +570,8 @@ function ChallengeArea({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [challenge.revealed, challenge.questionId]);
 
+  const urgent = useUrgent(challenge.deadline);
+
   if (!question) return null;
 
   const myAnswer = challenge.answers?.[playerId];
@@ -548,7 +584,7 @@ function ChallengeArea({
     if (myAnswer) {
       return (
         <div
-          className="glass-alert card-settle"
+          className={`glass-alert card-settle${urgent ? " card-dim-urgent" : ""}`}
           style={{
             width: "100%",
             maxWidth: 480,
@@ -570,31 +606,43 @@ function ChallengeArea({
     }
     if (question.type === "multiple-choice") {
       return (
-        <MultipleChoiceForm
-          key={question.id}
-          question={question}
-          deadline={challenge.deadline}
-          onSubmit={(index) => send({ type: "multiple-choice", index })}
-        />
+        <>
+          <UrgentFlash active={urgent} />
+          <MultipleChoiceForm
+            key={question.id}
+            question={question}
+            deadline={challenge.deadline}
+            urgent={urgent}
+            onSubmit={(index) => send({ type: "multiple-choice", index })}
+          />
+        </>
       );
     }
     if (question.type === "true-false") {
       return (
-        <TrueFalseForm
-          key={question.id}
-          question={question}
-          deadline={challenge.deadline}
-          onSubmit={(value) => send({ type: "true-false", value })}
-        />
+        <>
+          <UrgentFlash active={urgent} />
+          <TrueFalseForm
+            key={question.id}
+            question={question}
+            deadline={challenge.deadline}
+            urgent={urgent}
+            onSubmit={(value) => send({ type: "true-false", value })}
+          />
+        </>
       );
     }
     return (
-      <OrderForm
-        key={question.id}
-        question={question}
-        deadline={challenge.deadline}
-        onSubmit={(steps) => send({ type: "order", steps })}
-      />
+      <>
+        <UrgentFlash active={urgent} />
+        <OrderForm
+          key={question.id}
+          question={question}
+          deadline={challenge.deadline}
+          urgent={urgent}
+          onSubmit={(steps) => send({ type: "order", steps })}
+        />
+      </>
     );
   }
 
@@ -676,6 +724,7 @@ function PowerPhase({
   );
   const roleMeta = ROLES[effectiveRole];
   const { playRoundWin } = sfx;
+  const urgent = useUrgent(power.deadline);
 
   useEffect(() => {
     if (isWinnerMe) {
@@ -687,7 +736,10 @@ function PowerPhase({
 
   if (!power.resolved && isWinnerMe && !power.targetPlayerId) {
     return (
-      <div className="glass-alert gold card-punch" style={{ textAlign: "center" }}>
+      <div
+        className={`glass-alert card-punch ${urgent ? "card-dim-urgent" : "gold"}`}
+        style={{ textAlign: "center" }}
+      >
         <div style={{ fontFamily: "'Fredoka', sans-serif", fontSize: 20 }}>
           🎉 ¡Ganaste la ronda! Eres {roleMeta.name}
         </div>
@@ -788,7 +840,7 @@ function PowerPhase({
           {winner?.name} usó su poder en{" "}
           {target ? target.name : "nadie"}
         </span>
-        {effectiveRole === "saboteador" && target && (
+        {effectiveRole === "parasito" && target && (
           <span className="steal-heart">💛</span>
         )}
       </div>
@@ -804,15 +856,17 @@ function PowerPhase({
 function MultipleChoiceForm({
   question,
   deadline,
+  urgent,
   onSubmit,
 }: {
   question: MultipleChoiceQuestion;
   deadline: number;
+  urgent: boolean;
   onSubmit: (index: number) => void;
 }) {
   return (
     <div
-      className="card card-settle"
+      className={`card card-settle${urgent ? " card-heartbeat" : ""}`}
       style={{
         width: "100%",
         maxWidth: 480,
@@ -869,15 +923,17 @@ function MultipleChoiceForm({
 function TrueFalseForm({
   question,
   deadline,
+  urgent,
   onSubmit,
 }: {
   question: TrueFalseQuestion;
   deadline: number;
+  urgent: boolean;
   onSubmit: (value: boolean) => void;
 }) {
   return (
     <div
-      className="card card-settle"
+      className={`card card-settle${urgent ? " card-heartbeat" : ""}`}
       style={{
         width: "100%",
         maxWidth: 480,
@@ -944,10 +1000,12 @@ function TrueFalseForm({
 function OrderForm({
   question,
   deadline,
+  urgent,
   onSubmit,
 }: {
   question: OrderQuestion;
   deadline: number;
+  urgent: boolean;
   onSubmit: (steps: string[]) => void;
 }) {
   const [steps, setSteps] = useState<string[]>(() =>
@@ -964,7 +1022,7 @@ function OrderForm({
 
   return (
     <div
-      className="card card-settle"
+      className={`card card-settle${urgent ? " card-heartbeat" : ""}`}
       style={{
         width: "100%",
         maxWidth: 480,

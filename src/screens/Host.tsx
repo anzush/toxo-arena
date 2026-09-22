@@ -449,7 +449,7 @@ function PlayingView({ room }: { room: RoomState }) {
                         <span>
                           Objetivo: <strong>{targetPlayer.name}</strong>
                         </span>
-                        {effectiveRole === "saboteador" && (
+                        {effectiveRole === "parasito" && (
                           <span className="steal-heart">💛</span>
                         )}
                       </>

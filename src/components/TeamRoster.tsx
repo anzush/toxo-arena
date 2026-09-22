@@ -4,6 +4,7 @@ import { isAlive } from "../lib/gameEngine";
 import { PlayerState, TeamState } from "../types";
 import { Hearts } from "./Hearts";
 import { PlayerBean } from "./PlayerBean";
+import { StreakBadge } from "./StreakBadge";
 
 export function TeamRoster({
   team,
@@ -111,6 +112,7 @@ export function TeamRoster({
                 {player.name}
               </div>
               <Hearts lives={player.lives} size={11} event={event} />
+              <StreakBadge streak={player.roundWinStreak} />
               {revealRoles && player.role && (
                 <div
                   style={{

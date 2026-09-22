@@ -66,7 +66,8 @@ export async function joinRoom(code: string, playerId: string, name: string): Pr
     role: null,
     lives: 0,
     shielded: false,
-    powerUsed: false
+    powerUsed: false,
+    roundWinStreak: 0
   });
 }
 
@@ -188,7 +189,7 @@ export async function playAgain(code: string): Promise<void> {
   const resetPlayers = Object.fromEntries(
     Object.entries(room.players ?? {}).map(([id, p]) => [
       id,
-      { ...p, team: null, role: null, lives: 0, shielded: false, powerUsed: false }
+      { ...p, team: null, role: null, lives: 0, shielded: false, powerUsed: false, roundWinStreak: 0 }
     ])
   );
 

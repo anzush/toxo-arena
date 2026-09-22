@@ -1,6 +1,6 @@
 export type TeamId = "rojo" | "azul" | "verde";
 
-export type RoleId = "tripulante" | "impostor" | "medico" | "chaman" | "saboteador";
+export type RoleId = "tripulante" | "impostor" | "medico" | "chaman" | "parasito";
 
 export interface PlayerState {
   name: string;
@@ -10,6 +10,7 @@ export interface PlayerState {
   lives: number; // 0..STARTING_LIVES_PER_PLAYER
   shielded: boolean; // protege la próxima vez que este jugador iba a perder una vida
   powerUsed: boolean; // solo importa para médico/chamán: ya gastaron su poder de un solo uso
+  roundWinStreak: number; // rondas seguidas ganadas (más rápido en acertar); se rompe si no ganas la ronda
 }
 
 export interface TeamState {
@@ -105,3 +106,4 @@ export const TEAM_META: Record<TeamId, { name: string; color: string }> = {
 export const STARTING_LIVES_PER_PLAYER = 3;
 export const CHALLENGE_SECONDS = 20;
 export const POWER_SECONDS = 15;
+export const ROUND_WIN_STREAK_BONUS = 3; // rondas seguidas ganadas que dan una vida extra

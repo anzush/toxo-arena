@@ -14,6 +14,7 @@ const V = 2;
 export function useSfx(muted: boolean) {
   const opts = { soundEnabled: !muted };
 
+  const [playReveal] = useSound(`/sfx/reveal.ogg?v=${V}`, { volume: 0.6, ...opts });
   const [playCorrect] = useSound(`/sfx/correct.ogg?v=${V}`, { volume: 0.6, ...opts });
   const [playWrong] = useSound(`/sfx/wrong.ogg?v=${V}`, { volume: 0.6, ...opts });
   const [playHit] = useSound(`/sfx/hit.ogg?v=${V}`, { volume: 0.5, ...opts });
@@ -24,6 +25,7 @@ export function useSfx(muted: boolean) {
   const [playDefeat] = useSound(`/sfx/defeat.ogg?v=${V}`, { volume: 0.5, ...opts });
 
   return {
+    playReveal,
     playCorrect,
     playWrong,
     playHit,

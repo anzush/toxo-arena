@@ -39,12 +39,12 @@ export const ROLES: Record<RoleId, RoleMeta> = {
     color: "#A78BFA",
     emoji: "🔮"
   },
-  saboteador: {
-    id: "saboteador",
-    name: "Saboteador",
+  parasito: {
+    id: "parasito",
+    name: "Parásito",
     tagline: "Si ganas la ronda, le robas 1 vida a un rival: él la pierde y tú la ganas.",
     color: "#FFC857",
-    emoji: "🦹"
+    emoji: "🦠"
   }
 };
 
@@ -55,7 +55,7 @@ const ROLE_WEIGHTS: [RoleId, number][] = [
   ["impostor", 15],
   ["medico", 10],
   ["chaman", 10],
-  ["saboteador", 10]
+  ["parasito", 10]
 ];
 
 export function randomRole(): RoleId {
