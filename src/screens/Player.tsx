@@ -56,10 +56,19 @@ import {
 const ROOM_KEY = "toxo-arena-player-room";
 const NAME_KEY = "toxo-arena-player-name";
 
-export function Player({ onExit }: { onExit: () => void }) {
+export function Player({
+  onExit,
+  initialCode,
+}: {
+  onExit: () => void;
+  initialCode?: string | null;
+}) {
   const playerId = usePlayerId();
+  // Si venimos de un link con ?join=CÓDIGO (por ejemplo, al escanear el QR
+  // del anfitrión), priorizamos ese código nuevo sobre una sala guardada de
+  // una partida anterior, para no reconectarnos a la vieja por error.
   const [roomCode, setRoomCode] = useState<string | null>(() =>
-    localStorage.getItem(ROOM_KEY),
+    initialCode ? null : localStorage.getItem(ROOM_KEY),
   );
   const { room, loading } = useRoom(roomCode);
   const lifeEvents = useLifeEvents(room?.players);
@@ -75,7 +84,12 @@ export function Player({ onExit }: { onExit: () => void }) {
 
   if (!roomCode || (!loading && !room)) {
     return (
-      <JoinForm playerId={playerId} onJoined={setRoomCode} onExit={onExit} />
+      <JoinForm
+        playerId={playerId}
+        onJoined={setRoomCode}
+        onExit={onExit}
+        initialCode={initialCode}
+      />
     );
   }
   if (loading || !room) {
@@ -486,12 +500,14 @@ function JoinForm({
   playerId,
   onJoined,
   onExit,
+  initialCode,
 }: {
   playerId: string;
   onJoined: (code: string) => void;
   onExit: () => void;
+  initialCode?: string | null;
 }) {
-  const [code, setCode] = useState("");
+  const [code, setCode] = useState(initialCode ?? "");
   const [name, setName] = useState(() => localStorage.getItem(NAME_KEY) ?? "");
   const [error, setError] = useState<string | null>(null);
   const [busy, setBusy] = useState(false);
@@ -555,6 +571,7 @@ function JoinForm({
             onChange={(e) => setName(e.target.value)}
             placeholder="Ej. Andrés"
             maxLength={24}
+            autoFocus={!!initialCode}
           />
         </label>
         {error && (

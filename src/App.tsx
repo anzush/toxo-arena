@@ -7,8 +7,16 @@ type Role = "host" | "player" | null;
 
 const ROLE_KEY = "toxo-arena-role";
 
+/** Si el link trae ?join=CÓDIGO (por ejemplo, al escanear el QR del anfitrión), fuerza el rol jugador. */
+function joinCodeFromUrl(): string | null {
+  const code = new URLSearchParams(window.location.search).get("join");
+  return code ? code.trim().toUpperCase() : null;
+}
+
 export default function App() {
+  const [joinCode] = useState<string | null>(joinCodeFromUrl);
   const [role, setRole] = useState<Role>(() => {
+    if (joinCodeFromUrl()) return "player";
     const stored = localStorage.getItem(ROLE_KEY);
     return stored === "host" || stored === "player" ? stored : null;
   });
@@ -37,7 +45,8 @@ export default function App() {
   }
 
   if (role === "host") return <Host onExit={backToStart} />;
-  if (role === "player") return <Player onExit={backToStart} />;
+  if (role === "player")
+    return <Player onExit={backToStart} initialCode={joinCode} />;
 
   return (
     <div

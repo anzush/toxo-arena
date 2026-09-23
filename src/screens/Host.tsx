@@ -1,5 +1,6 @@
 import { useEffect, useState } from "react";
 import { Confetti } from "../components/Confetti";
+import { RoomQr } from "../components/RoomQr";
 import { RulesExplainer } from "../components/RulesExplainer";
 import { TeamRoster } from "../components/TeamRoster";
 import { useLifeEvents } from "../hooks/useLifeEvents";
@@ -18,6 +19,17 @@ import { ChallengeType, RoomState, TEAM_IDS } from "../types";
 
 const ROOM_KEY = "toxo-arena-host-room";
 const ALL_TYPES: ChallengeType[] = ["multiple-choice", "true-false", "order"];
+
+/**
+ * Link para unirse directo (QR y "copiar link"): usa VITE_APP_LINK (el
+ * dominio público de Vercel) si está configurado, así el QR sirve aunque
+ * el anfitrión esté mirando esto desde localhost en desarrollo. Si no está
+ * seteada, cae al origin actual del navegador (sirve para probar en LAN).
+ */
+function joinLink(code: string): string {
+  const base = import.meta.env.VITE_APP_LINK || `${window.location.origin}${window.location.pathname}`;
+  return new URL(`?join=${code}`, base).toString();
+}
 
 export function Host({ onExit }: { onExit: () => void }) {
   const [roomCode, setRoomCode] = useState<string | null>(() =>
@@ -214,9 +226,11 @@ function LobbyView({ room }: { room: RoomState }) {
         </div>
         <div style={{ fontSize: 13, color: "var(--text-muted)" }}>
           Los jugadores entran a la app, eligen "Soy jugador" y escriben este
-          código.
+          código — o escanean el QR de abajo para entrar directo.
         </div>
       </div>
+
+      <RoomQr value={joinLink(room.code)} />
 
       <div className="card" style={{ width: "100%", maxWidth: 480 }}>
         <div
